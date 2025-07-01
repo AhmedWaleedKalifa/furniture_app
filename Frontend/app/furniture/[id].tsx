@@ -5,6 +5,8 @@ import { fetchFurnitureDetails } from "@/services/api";
 import useFetch from "@/services/useFetch";
 import { icons } from "@/constants/icons";
 import db from "../../mock/db.json";
+import { useAuth } from "@/context/AuthContext";
+
 interface furnitureInfoProps {
   label: string;
   value?: string | number | null;
@@ -17,9 +19,33 @@ const furnitureInfo = ({ label, value }: furnitureInfoProps) => (
 );
 const FurnitureDetails = () => {
   const { id } = useLocalSearchParams();
-  const { data: furniture, loading } = useFetch(() =>
-    fetchFurnitureDetails(id as string)
-  );
+  const { data: furniture, loading } = useFetch(() => fetchFurnitureDetails(id as string));
+  const { wishlist, addItemToWishlist, removeItemFromWishlist, user } = useAuth();
+
+  const isWishlisted = (wishlist || []).some(item => item.productId === furniture?.id);  const handleWishlistToggle = () => {
+    if (!user) {
+        router.push('/login');
+        return;
+    }
+    if (!furniture) return;
+
+    if (isWishlisted) {
+      removeItemFromWishlist(furniture.id);
+    } else {
+      // We need the full product object to add it optimistically
+      const productSummary = {
+        id: furniture.id,
+        name: furniture.name,
+        price: furniture.price,
+        thumbnailUrl: furniture.thumbnailUrl,
+        description: furniture.description,
+        category: furniture.category,
+        isApproved: furniture.isApproved,
+      };
+      addItemToWishlist(productSummary);
+    }
+    
+  };
   //const furniture=db.furniture[Number(id)];
 
   // interface ProductDetails {
@@ -65,6 +91,13 @@ const FurnitureDetails = () => {
             <Text className="text-bl font-bold text-xl" numberOfLines={2}>
               {furniture?.name}
             </Text>
+            <TouchableOpacity onPress={handleWishlistToggle} className="p-2 bg-g-100 rounded-full">
+                    <Image 
+                        source={icons.save} 
+                        className="w-6 h-6"
+                        tintColor={isWishlisted ? '#E53E3E' : '#625043'} 
+                    />
+                </TouchableOpacity>
             <Text
               className="text-g-300 font-medium text-base"
               numberOfLines={2}

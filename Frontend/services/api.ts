@@ -1,18 +1,95 @@
-// export const TMDB_CONFIG={
-//     BASE_URL:"https://api.themoviedb.org/3",
-//     API_KEY:process.env.EXPO_PUBLIC_MOVIE_API_KEY,
-//     headers:{
-//         accept:'application/json',
-//         Authorization:`Bearer ${process.env.EXPO_PUBLIC_MOVIE_API_KEY}`
-//     }
-// }
+const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL;
 
+// --- Interfaces ---
+export interface LoginData {
+  email: string;
+  password: string;
+}
 
+export interface SignupData extends LoginData {
+  displayName: string;
+  role: 'client' | 'company';
+}
 
-export const fetchFurniture = async (): Promise<Product[]> => {
-    const endpoint = `${process.env.EXPO_PUBLIC_BASE_URL}/api/products`
+interface AuthResponse {
+    success: boolean;
+    message: string;
+    data: {
+        uid: string;
+        email: string;
+        displayName: string;
+        role: string;
+        token: string;
+    }
+}
+
+// --- Auth Functions ---
+export const loginUser = async (credentials: LoginData): Promise<User & {token: string}> => {
+    const response = await fetch(`${BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials),
+    });
+
+    const data: AuthResponse = await response.json();
+
+    if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Login failed');
+    }
+    return data.data;
+};
+
+export const signupUser = async (userData: SignupData): Promise<void> => {
+    const response = await fetch(`${BASE_URL}/api/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+    });
     
+    const data = await response.json();
 
+    if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Signup failed');
+    }
+};
+
+export const getCurrentUser = async (token: string): Promise<User> => {
+    const response = await fetch(`${BASE_URL}/api/auth/me`, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Failed to fetch user');
+    }
+    return data.data;
+}
+
+export const logoutUser = async (token: string): Promise<void> => {
+    const response = await fetch(`${BASE_URL}/api/auth/logout`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+        // We can ignore logout errors on the client side
+        // as we will clear the session anyway.
+        console.warn('Logout API call failed:', data.message);
+    }
+}
+
+
+// --- Furniture Functions (existing) ---
+export const fetchFurniture = async (): Promise<Product[]> => {
+    const endpoint = `${BASE_URL}/api/products`
+    
     console.log("Fetching from endpoint:", endpoint); 
     const response = await fetch(endpoint, {
         method: 'GET',
@@ -30,7 +107,7 @@ export const fetchFurniture = async (): Promise<Product[]> => {
 }
 
 export const fetchFurnitureDetails = async (id:string): Promise<ProductDetails> => {
-    const endpoint = `${process.env.EXPO_PUBLIC_BASE_URL}/api/products/${id}`
+    const endpoint = `${BASE_URL}/api/products/${id}`
 
     console.log("Fetching from endpoint:", endpoint); 
 
@@ -48,38 +125,179 @@ export const fetchFurnitureDetails = async (id:string): Promise<ProductDetails> 
     const data = await response.json();
     return data.data;
 }
+// ... (at the top with other interfaces)
+interface GoogleAuthResponse {
+    success: boolean;
+    message: string;
+    data: User & { token: string };
+}
+// ...
+export const signInWithGoogle = async (idToken: string): Promise<User & { token: string }> => {
+    const response = await fetch(`${BASE_URL}/api/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+    });
+
+    const data: GoogleAuthResponse = await response.json();
+
+    if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Google Sign-In failed');
+    }
+    return data.data;
+};
+
+// ... (existing auth and furniture functions)
+
+// Helper to create authenticated headers
+const getAuthHeaders = (token: string) => ({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+});
+
+// --- Wishlist Functions ---
+
+export const getWishlist = async (token: string): Promise<WishlistItem[]> => {
+    const response = await fetch(`${BASE_URL}/api/users/wishlist`, {
+        headers: getAuthHeaders(token)
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Failed to fetch wishlist');
+    }
+
+    // --- THIS IS THE FIX ---
+    // The runtime error indicates the API returns an object, not an array directly.
+    // The actual array of items is nested inside the 'data' object.
+    // We now correctly return the 'items' array from within the response data.
+    return data.data.items || [];
+};
+
+export const addToWishlist = async (token: string, productId: string): Promise<void> => {
+    const response = await fetch(`${BASE_URL}/api/users/wishlist`, {
+        method: 'POST',
+        headers: getAuthHeaders(token),
+        body: JSON.stringify({ productId })
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to add to wishlist');
+};
+
+export const removeFromWishlist = async (token: string, productId: string): Promise<void> => {
+    // This now matches the new backend route: DELETE /api/users/wishlist/:productId
+    const response = await fetch(`${BASE_URL}/api/users/wishlist/${productId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(token)
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Failed to remove from wishlist');
+    }
+};
+
+// --- Order Functions ---
+
+export const getMyOrders = async (token: string): Promise<Order[]> => {
+    const response = await fetch(`${BASE_URL}/api/orders/my-orders`, {
+        headers: getAuthHeaders(token)
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch orders');
+    return data.data;
+}
+
+// --- Support Ticket Functions ---
+
+export const getMyTickets = async (token: string): Promise<SupportTicket[]> => {
+    const response = await fetch(`${BASE_URL}/api/support/tickets`, {
+        headers: getAuthHeaders(token)
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch tickets');
+    return data.data;
+}
+
+export const createTicket = async (token: string, ticketData: { subject: string, message: string, priority: string, category: string }): Promise<void> => {
+    const response = await fetch(`${BASE_URL}/api/support/tickets`, {
+        method: 'POST',
+        headers: getAuthHeaders(token),
+        body: JSON.stringify(ticketData)
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to create ticket');
+}
 
 
+// --- Admin Functions ---
 
+export const getAdminStats = async (token: string): Promise<AdminStats> => {
+    const response = await fetch(`${BASE_URL}/api/admin/stats`, {
+        headers: getAuthHeaders(token)
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch admin stats');
+    return data.data;
+}
 
+export const getPendingProducts = async (token: string): Promise<Product[]> => {
+    const response = await fetch(`${BASE_URL}/api/admin/products/pending`, {
+        headers: getAuthHeaders(token)
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch pending products');
+    return data.data;
+}
 
-// export const fetchMovieDetails= async(movieId:string):Promise<MovieDetails>=>{
-//     try{
-//         const response=await fetch(`${TMDB_CONFIG.BASE_URL}/movie/${movieId}?api_key=${TMDB_CONFIG.API_KEY}`,{
-//             method:"Get",
-//             headers:TMDB_CONFIG.headers
-//         })
-//         if(!response.ok)throw new Error("Failed to fetch movie data")
-//         const data=await response.json();
-//         return data;
-//     }catch(error){
-//         console.log(error);
-//         throw error;
-//     }
-// }
+export const approveProduct = async (token: string, productId: string): Promise<void> => {
+    const response = await fetch(`${BASE_URL}/api/admin/products/${productId}/approve`, {
+        method: 'PUT',
+        headers: getAuthHeaders(token),
+        body: JSON.stringify({ action: 'approve' })
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to approve product');
+}
 
-//export const fetchMovies=async({query}:{query:string})=>{
-    //     const endpoint = query
-    //     ? `${TMDB_CONFIG.BASE_URL}/search/movie?query=${encodeURIComponent(query)}`
-    //     : `${TMDB_CONFIG.BASE_URL}/discover/movie?sort_by=popularity.desc`;
-    
-    //     const response=await fetch(endpoint,{
-    //         method:'GET',
-    //         headers:TMDB_CONFIG.headers
-    //     })
-    //     if(!response.ok){
-    //         throw new Error(`Failed to fetch movies ${response.statusText}` )
-    //     }
-    //     const data=await response.json();
-    //     return data.results;
-    // }
+// ... (at the top, with other interfaces)
+
+// Define the shape of data for creating a new product
+export interface NewProductData {
+    name: string;
+    description: string;
+    category: string;
+    price: number;
+    modelUrl: string;
+    thumbnailUrl: string;
+    dimensions: {
+      width: number;
+      height: number;
+      depth: number;
+      unit: string;
+    };
+  }
+  
+  // ... (inside the file, after existing functions)
+  
+  // --- Company Functions ---
+  
+  export const getCompanyProducts = async (token: string): Promise<Product[]> => {
+      // NOTE: The backend testing sequence does not explicitly list this endpoint.
+      // This assumes an endpoint like `GET /api/products/my-products` exists for companies.
+      // If not, the backend would need to be updated to filter GET /api/products by the authenticated company user.
+      const response = await fetch(`${BASE_URL}/api/products/my-products`, {
+          headers: getAuthHeaders(token)
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || "Failed to fetch company's products");
+      return data.data;
+  }
+  
+  export const createProduct = async (token: string, productData: NewProductData): Promise<void> => {
+      const response = await fetch(`${BASE_URL}/api/products`, {
+          method: 'POST',
+          headers: getAuthHeaders(token),
+          body: JSON.stringify(productData)
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || "Failed to create product");
+  }

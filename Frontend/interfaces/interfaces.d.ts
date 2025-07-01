@@ -77,9 +77,12 @@ interface TrendingCardProps {
 }
 
 interface User {
-  id: string;
+  uid: string;
   email: string;
-  name: string;
+  displayName: string;
+  role: string;
+  avatar?: string;
+  phone?: string;
 }
 interface Product {
   id: string;
@@ -111,4 +114,50 @@ interface Product {
     material: boolean;
   };
   tags: string[];
+}
+interface OrderItem {
+  productId: string;
+  productName: string;
+  productImage?: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+interface Order {
+  id: string; // or orderId
+  userId: string;
+  items: OrderItem[];
+  totalPrice: number;
+  orderStatus: 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  paymentStatus: 'pending' | 'paid' | 'failed';
+  createdAt: string;
+}
+
+interface SupportTicket {
+  id: string;
+  subject: string;
+  message: string;
+  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  priority: 'low' | 'medium' | 'high';
+  category: string;
+  createdAt: string;
+}
+
+interface AdminStats {
+  totalUsers: number;
+  totalProducts: number;
+  totalOrders: number;
+  totalRevenue: number;
+  pendingProducts: number;
+  activeUsers: number;
+}
+
+// FIX: Update WishlistItem to match the flattened data structure from the API
+interface WishlistItem {
+  productId: string;
+  addedAt: string;
+  productName: string;
+  price: number;
+  productImage: string; // Renamed from thumbnailUrl and removed nesting
 }
