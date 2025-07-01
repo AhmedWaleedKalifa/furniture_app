@@ -1,114 +1,123 @@
-import { Image, View, Text, ImageBackground, StatusBar } from 'react-native'
-import React from 'react'
-import { Tabs } from 'expo-router'
-import { images } from '@/constants/images'
-import { icons } from '@/constants/icons'
-const TabIcon = ({focused,icon,title}:any) => {
-   if(focused){
-    return(
-        <>
-            <ImageBackground
-                source={images.highlight}
-                className='flex flex-row w-full flex-1 min-w-[114px] min-h-16 mt-6 justify-center items-center rounded-full overflow-hidden'
-            >
-                <Image
-                    source={icon}
-                    tintColor="#ffffff" className="size-5 "
-                />
-                <Text className='text-w-100 text-base font-semibold ml-2'>{title}</Text>
-            </ImageBackground>
-        </>
-       )
-   }
-   return(
-    <View className='size-full justify-center items-center mt-4 rounded-full'>
-        <Image source={icon} className='size-5' tintColor="#919191"/>
-    </View>
-   )
-}
-const _layout = () => {
-    return (
-       <>
-        <StatusBar hidden={true}/>
-        <Tabs
-        screenOptions={{
-            tabBarShowLabel:false,
-            tabBarItemStyle:{
-                width:"100%",
-                height:"100%",
-                justifyContent:"center",
-                alignItems:"center",
-            },
-            tabBarStyle:{
-                backgroundColor:"#D9D9D9",
-                borderRadius:50,
-                marginHorizontal:20,
-                marginBottom:36,
-                height:52,
-                position:"absolute",
-                overflow:"hidden",
-            }
-        }}
-        >
-            <Tabs.Screen
-                name="index"
-                options={{
-                    title: "Home",
-                    headerShown: false,
-                    tabBarIcon: ({ focused }) => (
-                        <TabIcon 
-                            focused={focused}
-                            icon={icons.home}
-                            title="Home"
-                        />
-                    )
-                }}
-            />
-            <Tabs.Screen
-                name="search"
-                options={{
-                    title: "Search",
-                    headerShown: false,
-                    tabBarIcon: ({ focused }) => (
-                        <TabIcon 
-                            focused={focused}
-                            icon={icons.search}
-                            title="Search"
-                        />
-                    )
-                }}
-            />
-            <Tabs.Screen
-                name="profile"
-                options={{
-                    title: "Profile",
-                    headerShown: false,
-                    tabBarIcon: ({ focused }) => (
-                        <TabIcon 
-                            focused={focused}
-                            icon={icons.person}
-                            title="Profile"
-                        />
-                    )
-                }}
-            />
-            <Tabs.Screen
-                name="saved"
-                options={{
-                    title: "Saved",
-                    headerShown: false,
-                    tabBarIcon: ({ focused }) => (
-                        <TabIcon 
-                            focused={focused}
-                            icon={icons.save}
-                            title="Saved"
-                        />
-                    )
-                }}
-            />
-        </Tabs>
-       </>
-    )
+import React, { useEffect } from 'react';
+import { Tabs, router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@/context/AuthContext';
+
+// Fix the TabIconProps interface
+interface TabIconProps {
+  focused: boolean;
+  name: keyof typeof Ionicons.glyphMap; // This ensures type safety
+  color: string;
+  size: number;
 }
 
-export default _layout
+// Create a proper icon mapping function
+const getIconName = (iconName: string, focused: boolean): keyof typeof Ionicons.glyphMap => {
+  const iconMapping: Record<string, { focused: keyof typeof Ionicons.glyphMap; outline: keyof typeof Ionicons.glyphMap }> = {
+    'home': { focused: 'home', outline: 'home-outline' },
+    'search': { focused: 'search', outline: 'search-outline' },
+    'heart': { focused: 'heart', outline: 'heart-outline' },
+    'receipt': { focused: 'receipt', outline: 'receipt-outline' },
+    'person': { focused: 'person', outline: 'person-outline' },
+    'business': { focused: 'business', outline: 'business-outline' },
+    'shield': { focused: 'shield', outline: 'shield-outline' },
+    'help-circle': { focused: 'help-circle', outline: 'help-circle-outline' },
+  };
+
+  const icons = iconMapping[iconName];
+  if (!icons) {
+    return focused ? 'home' : 'home-outline';
+  }
+  return focused ? icons.focused : icons.outline;
+};
+
+const TabIcon = ({ focused, name, color, size }: TabIconProps) => (
+  <Ionicons 
+    name={name}
+    size={size} 
+    color={color} 
+  />
+);
+
+export default function TabLayout() {
+  const { isAuthenticated, loading, user } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [isAuthenticated, loading]);
+
+  if (loading || !user) {
+    return null;
+  }
+
+  // Updated tab configuration with proper icon handling
+  const getTabsForRole = () => {
+    switch (user.role) {
+      case 'client':
+        return [
+          { name: 'index', title: 'Home', icon: 'home' },
+          { name: 'search', title: 'Search', icon: 'search' },
+          { name: 'saved', title: 'Wishlist', icon: 'heart' },
+          { name: 'orders', title: 'Orders', icon: 'receipt' },
+          { name: 'profile', title: 'Profile', icon: 'person' }
+        ];
+
+      case 'company':
+        return [
+          { name: 'index', title: 'Home', icon: 'home' },
+          { name: 'company_dashboard', title: 'Dashboard', icon: 'business' },
+          { name: 'orders', title: 'Orders', icon: 'receipt' },
+          { name: 'profile', title: 'Profile', icon: 'person' }
+        ];
+
+      case 'admin':
+        return [
+          { name: 'index', title: 'Home', icon: 'home' },
+          { name: 'admin_dashboard', title: 'Admin Panel', icon: 'shield' },
+          { name: 'support', title: 'Support', icon: 'help-circle' },
+          { name: 'profile', title: 'Profile', icon: 'person' }
+        ];
+
+      default:
+        return [
+          { name: 'index', title: 'Home', icon: 'home' },
+          { name: 'profile', title: 'Profile', icon: 'person' }
+        ];
+    }
+  };
+
+  const tabs = getTabsForRole();
+
+  return (
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: '#22bb22',
+        tabBarInactiveTintColor: '#606060',
+        headerShown: false,
+      }}
+    >
+      {tabs.map((tab) => (
+        <Tabs.Screen
+          key={tab.name}
+          name={tab.name}
+          options={{
+            title: tab.title,
+            tabBarIcon: ({ color, size, focused }) => (
+              <TabIcon 
+                focused={focused} 
+                name={getIconName(tab.icon, focused)} // Use the mapping function
+                color={color} 
+                size={size} 
+              />
+            ),
+          }}
+        />
+      ))}
+      
+      {/* Hidden screens */}
+      <Tabs.Screen name="furniture/[id]" options={{ href: null }} />
+    </Tabs>
+  );
+}

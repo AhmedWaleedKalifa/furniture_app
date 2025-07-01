@@ -3,7 +3,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
-
+const multer = require('multer');
+const path = require('path');
 // Import routes
 const authRoutes = require('./src/routes/auth');
 const productRoutes = require('./src/routes/products');
@@ -11,6 +12,7 @@ const userRoutes = require('./src/routes/users');
 const adminRoutes = require('./src/routes/admin');
 const orderRoutes = require('./src/routes/orders');
 const supportRoutes = require('./src/routes/support');
+const uploadRoutes = require('./src/routes/upload');
 
 // Import Firebase config
 const { initializeFirebase } = require('./src/config/firebase');
@@ -34,14 +36,16 @@ app.use(limiter);
 
 // CORS configuration
 const allowedOrigins = [
-  'http://localhost:8081', // Expo web
-  'http://localhost:3001', // Potentially another web client
-  `${process.env.BASE_URL | '192.168.1.13'}:8081` // Allow access from other devices on the network
+  'http://localhost:8081',
+  'http://localhost:3001',
+  'exp://localhost:8081',
+  'http://192.168.1.13:8081',
+  '*' // For development - remove in production
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -49,6 +53,7 @@ app.use(cors({
   },
   credentials: true
 }));
+
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -64,7 +69,31 @@ app.get('/health', (req, res) => {
   });
 });
 
+
+// Configure multer for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|glb|gltf|obj/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype) || file.mimetype.includes('model');
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only images and 3D model files are allowed'));
+    }
+  }
+});
+
+// Add before your routes
+app.use('/uploads', express.static('uploads'));
+
+
 // API routes
+app.use('/api/upload', uploadRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);

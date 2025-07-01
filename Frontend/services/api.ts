@@ -165,13 +165,11 @@ export const getWishlist = async (token: string): Promise<WishlistItem[]> => {
     if (!response.ok || !data.success) {
         throw new Error(data.message || 'Failed to fetch wishlist');
     }
-
-    // --- THIS IS THE FIX ---
-    // The runtime error indicates the API returns an object, not an array directly.
-    // The actual array of items is nested inside the 'data' object.
-    // We now correctly return the 'items' array from within the response data.
-    return data.data.items || [];
+    // The API returns an object with a 'data' property that holds the array of items
+    return data.data || [];
 };
+
+
 
 export const addToWishlist = async (token: string, productId: string): Promise<void> => {
     const response = await fetch(`${BASE_URL}/api/users/wishlist`, {
@@ -230,6 +228,25 @@ export const createTicket = async (token: string, ticketData: { subject: string,
 
 // --- Admin Functions ---
 
+export const getAllUsers = async (token: string): Promise<User[]> => {
+    const response = await fetch(`${BASE_URL}/api/admin/users`, {
+        headers: getAuthHeaders(token)
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch users');
+    return data.data;
+};
+
+export const updateUserRole = async (token: string, userId: string, role: string): Promise<void> => {
+    const response = await fetch(`${BASE_URL}/api/admin/users/${userId}/role`, {
+        method: 'PUT',
+        headers: getAuthHeaders(token),
+        body: JSON.stringify({ role })
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update user role');
+};
+
 export const getAdminStats = async (token: string): Promise<AdminStats> => {
     const response = await fetch(`${BASE_URL}/api/admin/stats`, {
         headers: getAuthHeaders(token)
@@ -281,10 +298,8 @@ export interface NewProductData {
   // --- Company Functions ---
   
   export const getCompanyProducts = async (token: string): Promise<Product[]> => {
-      // NOTE: The backend testing sequence does not explicitly list this endpoint.
-      // This assumes an endpoint like `GET /api/products/my-products` exists for companies.
-      // If not, the backend would need to be updated to filter GET /api/products by the authenticated company user.
-      const response = await fetch(`${BASE_URL}/api/products/my-products`, {
+      // The backend should automatically filter by the logged-in company's token
+      const response = await fetch(`${BASE_URL}/api/products`, {
           headers: getAuthHeaders(token)
       });
       const data = await response.json();

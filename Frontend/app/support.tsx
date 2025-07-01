@@ -3,11 +3,14 @@ import React, { useState } from 'react';
 import useFetch from '@/services/useFetch';
 import { getMyTickets, createTicket } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
+import { useRoleAccess } from '@/lib/useRoleAcess';
 
 const initialTicketState = { subject: '', message: '', category: 'general', priority: 'medium' };
 
 const SupportScreen = () => {
     const { token } = useAuth();
+    const { hasAccess } = useRoleAccess(['admin', 'company', 'client']);
+
     const { data: tickets, loading, error, refetch } = useFetch(() => getMyTickets(token!), !!token);
     
     const [isModalVisible, setModalVisible] = useState(false);
@@ -42,7 +45,13 @@ const SupportScreen = () => {
             default: return 'bg-gray-100 text-gray-800';
         }
     };
-
+    if (!hasAccess) {
+        return (
+          <View className="flex-1 justify-center items-center">
+            <Text className="text-lg text-red-500">Access Denied</Text>
+          </View>
+        );
+      }
     return (
         <View className="flex-1 bg-w-200 p-5 pt-16">
             <Text className="text-2xl font-bold text-bl mb-4">Support Center</Text>

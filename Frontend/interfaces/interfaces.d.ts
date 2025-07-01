@@ -84,6 +84,7 @@ interface User {
   avatar?: string;
   phone?: string;
 }
+
 interface Product {
   id: string;
   name: string;
@@ -94,7 +95,7 @@ interface Product {
   thumbnailUrl: string;
 }
 
- interface ProductDetails {
+interface ProductDetails {
   id: string;
   name: string;
   description: string;
@@ -115,6 +116,7 @@ interface Product {
   };
   tags: string[];
 }
+
 interface OrderItem {
   productId: string;
   productName: string;
@@ -125,7 +127,7 @@ interface OrderItem {
 }
 
 interface Order {
-  id: string; // or orderId
+  id: string;
   userId: string;
   items: OrderItem[];
   totalPrice: number;
@@ -153,11 +155,13 @@ interface AdminStats {
   activeUsers: number;
 }
 
-// FIX: Update WishlistItem to match the flattened data structure from the API
 interface WishlistItem {
   productId: string;
   addedAt: string;
   productName: string;
   price: number;
-  productImage: string; // Renamed from thumbnailUrl and removed nesting
+  productImage: string;
 }
+
+// Remove the AuthState interface and related code from here
+// as it should be defined in the AuthContext file, not as a global interface

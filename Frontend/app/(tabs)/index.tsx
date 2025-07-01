@@ -1,65 +1,145 @@
-import SearchBar from "@/components/SearchBar";
-import { icons } from "@/constants/icons";
-import {  router } from "expo-router";
-import { Text, View, Image, ScrollView, ActivityIndicator, FlatList } from "react-native";
-import Card from "@/components/Card";
-import {fetchFurniture} from "../../services/api"
-import useFetch from "@/services/useFetch";
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  FlatList,
+  Image,
+  ActivityIndicator,
+} from 'react-native';
+import { router } from 'expo-router';
+import { useAuth } from '@/context/AuthContext';
+import { fetchFurniture } from '@/services/api';
+import useFetch from '@/services/useFetch';
+import Card from '@/components/Card';
+import { icons } from '@/constants/icons';
 
 export default function Index() {
-
+  const { user } = useAuth();
   const { data: furniture, loading, error } = useFetch(fetchFurniture);
 
-  return (
-    <View className="flex-1 bg-w-200">
-      <ScrollView
-        className="flex-1 px-5"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          minHeight: "100%",
-          paddingBottom: 10,
-        }}
-      >
-        <Image source={icons.logo} className="w-16 h-16 mt-14 mb-1 mx-auto" />
-        {loading? (
-          <ActivityIndicator
-            size="large"
-            color="#65B3B5"
-            className="mt-10 self-center"
-          />
-        ) : error? (
-          <Text>Error:{error?.message}</Text>
-        ) : (
-          <View className="flex-1 mt-5">
-            <SearchBar
-              onPress={() => router.push("/search")}
-              placeholder="Search for a furniture"
-            />
-            
-            <>
-              <Text className="text-lg text-g-200 font-bold mt-5 mb-3 ">Furniture</Text>
-              <FlatList
-                data={furniture}
-                renderItem={({item})=>(
-                  <Card
-                      {...item}
-                  />
-                )}
-                keyExtractor={(item)=>item.id.toString()}
-                numColumns={3}
-                columnWrapperStyle={{
-                  justifyContent:"flex-start",
-                  gap:23,
-                  paddingRight:5,
-                  marginBottom:10
-                }}
-                className="mt-2 pb-32"
-                scrollEnabled={false}
-              />
-            </>
+  const renderRoleSpecificActions = () => {
+    switch (user?.role) {
+      case 'client':
+        return (
+          <View className="flex-row justify-between px-5 mt-6">
+            <TouchableOpacity
+              className="bg-accent rounded-lg p-4 flex-1 mr-2 items-center"
+              onPress={() => router.push('/search')}
+            >
+              <Image source={icons.search} className="w-6 h-6" tintColor="white" />
+              <Text className="text-white font-medium mt-2">Search</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="bg-bl rounded-lg p-4 flex-1 ml-2 items-center"
+              onPress={() => router.push('/saved')}
+            >
+              <Image source={icons.save} className="w-6 h-6" tintColor="white" />
+              <Text className="text-white font-medium mt-2">Wishlist</Text>
+            </TouchableOpacity>
           </View>
+        );
+
+      case 'company':
+        return (
+          <View className="flex-row justify-between px-5 mt-6">
+            <TouchableOpacity
+              className="bg-accent rounded-lg p-4 flex-1 mr-2 items-center"
+              onPress={() => router.push('/company_dashboard')}
+            >
+              <Image source={icons.logo} className="w-6 h-6" tintColor="white" />
+              <Text className="text-white font-medium mt-2">Dashboard</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="bg-bl rounded-lg p-4 flex-1 ml-2 items-center"
+              onPress={() => router.push('/orders')}
+            >
+              <Image source={icons.star} className="w-6 h-6" tintColor="white" />
+              <Text className="text-white font-medium mt-2">Orders</Text>
+            </TouchableOpacity>
+          </View>
+        );
+
+      case 'admin':
+        return (
+          <View className="flex-row justify-between px-5 mt-6">
+            <TouchableOpacity
+              className="bg-accent rounded-lg p-4 flex-1 mr-2 items-center"
+              onPress={() => router.push('/admin_dashboard')}
+            >
+              <Image source={icons.logo} className="w-6 h-6" tintColor="white" />
+              <Text className="text-white font-medium mt-2">Admin Panel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="bg-bl rounded-lg p-4 flex-1 ml-2 items-center"
+              onPress={() => router.push('/support')}
+            >
+              <Image source={icons.star} className="w-6 h-6" tintColor="white" />
+              <Text className="text-white font-medium mt-2">Support</Text>
+            </TouchableOpacity>
+          </View>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const getWelcomeMessage = () => {
+    switch (user?.role) {
+      case 'client':
+        return 'Discover furniture in AR';
+      case 'company':
+        return 'Manage your furniture products';
+      case 'admin':
+        return 'System administration panel';
+      default:
+        return 'Welcome to Furnish-AR';
+    }
+  };
+
+  return (
+    <ScrollView className="flex-1 bg-white">
+      {/* Header */}
+      <View className="px-5 pt-8">
+        <Text className="text-2xl font-bold text-bl">
+          Welcome, {user?.displayName}!
+        </Text>
+        <Text className="text-g-200 mt-1">
+          {getWelcomeMessage()}
+        </Text>
+      </View>
+
+      {/* Role-specific actions */}
+      {renderRoleSpecificActions()}
+
+      {/* Furniture List - Show to all roles but with different purposes */}
+      <View className="px-5 mt-8">
+        <Text className="text-lg font-semibold text-bl mb-4">
+          {user?.role === 'admin' ? 'All Products' : 
+           user?.role === 'company' ? 'Latest Products' : 'Furniture'}
+        </Text>
+        
+        {loading ? (
+          <ActivityIndicator size="large" color="#22bb22" />
+        ) : error ? (
+          <Text className="text-red-500">Error: {error.message}</Text>
+        ) : (
+          <FlatList
+            data={furniture}
+            keyExtractor={(item) => item.id.toString()}
+            numColumns={3}
+            columnWrapperStyle={{
+              justifyContent: "flex-start",
+              gap: 16,
+              marginVertical: 8
+            }}
+            scrollEnabled={false}
+            renderItem={({ item }) => <Card {...item} />}
+          />
         )}
-      </ScrollView>
-    </View>
+      </View>
+    </ScrollView>
   );
 }

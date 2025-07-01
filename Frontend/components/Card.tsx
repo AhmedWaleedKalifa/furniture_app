@@ -10,7 +10,7 @@ import { icons } from '@/constants/icons'
 const Card = ({id,thumbnailUrl,name,category,price}:Product) => {
     return (
     <Link href={`/furniture/${id}`} asChild>
-        <TouchableOpacity className='w-[30%]'>
+        <TouchableOpacity className='w-[30%] overflow-hidden'>
             <Image
                 source={{
                     uri:thumbnailUrl
@@ -21,11 +21,11 @@ const Card = ({id,thumbnailUrl,name,category,price}:Product) => {
                 resizeMode='cover'
             />
             <Text className='text-sm font-bold text-bl mt-2' numberOfLines={1}>{name}</Text>
-            <View className='flex-row items-center justify-between gap-x-1'>
+            <View className='flex-row items-center justify-between gap-x-1 overflow-hidden max-w-20 '>
                 <Text className='text-xs text-g-300 font-medium mt-1'>
                     ${price}
                 </Text>
-                <Text className='text-sm text-bl font-bold uppercase'>
+                <Text className='text-sm text-bl font-bold uppercase '>
                     {category}
                 </Text>
             </View>

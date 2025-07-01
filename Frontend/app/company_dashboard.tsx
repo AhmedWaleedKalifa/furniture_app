@@ -4,6 +4,7 @@ import useFetch from '@/services/useFetch';
 import { getCompanyProducts, createProduct } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { icons } from '@/constants/icons';
+import { useCompanyOnly } from '@/lib/useRoleAcess';
 
 const initialFormState = {
     name: '',
@@ -17,7 +18,7 @@ const initialFormState = {
 
 const CompanyDashboard = () => {
     const { token } = useAuth();
-    const { data: products, loading, error, refetch } = useFetch(() => getCompanyProducts(token!), !!token);
+    const { hasAccess, isLoading } = useCompanyOnly();    const { data: products, loading, error, refetch } = useFetch(() => getCompanyProducts(token!), !!token);
     
     const [isModalVisible, setModalVisible] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,9 +51,24 @@ const CompanyDashboard = () => {
             setIsSubmitting(false);
         }
     };
-
+    if (isLoading) {
+        return (
+          <View className="flex-1 justify-center items-center">
+            <ActivityIndicator size="large" color="#22bb22" />
+          </View>
+        );
+      }
+    
+      if (!hasAccess) {
+        return (
+          <View className="flex-1 justify-center items-center">
+            <Text className="text-lg text-red-500">Company Access Required</Text>
+          </View>
+        );
+      }
     return (
         <View className="flex-1 bg-w-200 p-5 pt-16">
+            
             <Text className="text-2xl font-bold text-bl mb-4">Company Dashboard</Text>
             <TouchableOpacity onPress={() => setModalVisible(true)} className="bg-br p-3 rounded-lg mb-6">
                 <Text className="text-w-100 text-center font-bold">Add New Product</Text>
