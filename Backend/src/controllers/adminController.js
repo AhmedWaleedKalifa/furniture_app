@@ -311,6 +311,36 @@ const getProductAnalytics = async (req, res) => {
     });
   }
 };
+const deleteProduct = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const db = getFirestore();
+    
+    // First check if product exists
+    const productDoc = await db.collection('products').doc(productId).get();
+    if (!productDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found'
+      });
+    }
+
+    // Delete product
+    await db.collection('products').doc(productId).delete();
+    
+    res.status(200).json({
+      success: true,
+      message: 'Product deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete product error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting product'
+    });
+  }
+};
+
 
 module.exports = {
   getPendingProducts,
@@ -318,5 +348,6 @@ module.exports = {
   getSystemStats,
   getAllUsers,
   updateUserRole,
-  getProductAnalytics
+  getProductAnalytics,
+  deleteProduct
 }; 

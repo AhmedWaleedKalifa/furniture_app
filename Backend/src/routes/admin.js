@@ -9,6 +9,7 @@ router.use(verifyToken, getUserProfile, requireAdmin);
 // Product management
 router.get('/products/pending', adminController.getPendingProducts);
 router.put('/products/:productId/approve', adminController.approveProduct);
+router.delete('/products/:productId', adminController.deleteProduct);
 
 // System statistics
 router.get('/stats', adminController.getSystemStats);

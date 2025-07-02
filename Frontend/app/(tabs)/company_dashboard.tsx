@@ -1,10 +1,10 @@
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, Modal, TextInput, ScrollView, Image } from 'react-native';
 import React, { useState } from 'react';
-import useFetch from '@/services/useFetch';
-import { getCompanyProducts, createProduct } from '@/services/api';
-import { useAuth } from '@/context/AuthContext';
-import { icons } from '@/constants/icons';
-import { useCompanyOnly } from '@/lib/useRoleAcess';
+import useFetch from '../../services/useFetch';
+import { getCompanyProducts, createProduct } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { icons } from '../../constants/icons';
+import { useCompanyOnly } from '../../lib/useRoleAcess';
 
 const initialFormState = {
     name: '',

@@ -1,9 +1,9 @@
 import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import React from 'react';
-import useFetch from '@/services/useFetch';
-import { getMyOrders } from '@/services/api';
-import { useAuth } from '@/context/AuthContext';
-import { useRoleAccess } from '@/lib/useRoleAcess';
+import useFetch from '../../services/useFetch';
+import { getMyOrders } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { useRoleAccess } from '../../lib/useRoleAcess';
 
 const OrdersScreen = () => {
   const { token, user } = useAuth();

@@ -1,8 +1,8 @@
 import { Text, View, Image, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
 import React from "react";
-import { icons } from "@/constants/icons";
-import { images } from "@/constants/images";
-import { useAuth } from "@/context/AuthContext";
+import { icons } from "../../constants/icons";
+import { images } from "../../constants/images";
+import { useAuth } from "../../context/AuthContext";
 import { router } from "expo-router";
 
 const ProfileLink = ({ label, onPress }: { label: string, onPress: () => void }) => (

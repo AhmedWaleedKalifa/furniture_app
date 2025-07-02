@@ -1,19 +1,22 @@
 import React, { useEffect } from 'react';
 import { Tabs, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
+import { ActivityIndicator, View, Text } from 'react-native';
 
-// Fix the TabIconProps interface
-interface TabIconProps {
+// This is a helper component, no changes needed here.
+const TabIcon = ({ focused, name, color, size }: {
   focused: boolean;
-  name: keyof typeof Ionicons.glyphMap; // This ensures type safety
+  name: keyof typeof Ionicons.glyphMap;
   color: string;
   size: number;
-}
+}) => (
+  <Ionicons name={name} size={size} color={color} />
+);
 
-// Create a proper icon mapping function
+// This is a helper function, no changes needed here.
 const getIconName = (iconName: string, focused: boolean): keyof typeof Ionicons.glyphMap => {
-  const iconMapping: Record<string, { focused: keyof typeof Ionicons.glyphMap; outline: keyof typeof Ionicons.glyphMap }> = {
+  const iconMapping: Record<string, { focused: string; outline: string }> = {
     'home': { focused: 'home', outline: 'home-outline' },
     'search': { focused: 'search', outline: 'search-outline' },
     'heart': { focused: 'heart', outline: 'heart-outline' },
@@ -23,21 +26,10 @@ const getIconName = (iconName: string, focused: boolean): keyof typeof Ionicons.
     'shield': { focused: 'shield', outline: 'shield-outline' },
     'help-circle': { focused: 'help-circle', outline: 'help-circle-outline' },
   };
-
   const icons = iconMapping[iconName];
-  if (!icons) {
-    return focused ? 'home' : 'home-outline';
-  }
-  return focused ? icons.focused : icons.outline;
+  return icons ? (focused ? icons.focused as keyof typeof Ionicons.glyphMap : icons.outline as keyof typeof Ionicons.glyphMap) : 'home';
 };
 
-const TabIcon = ({ focused, name, color, size }: TabIconProps) => (
-  <Ionicons 
-    name={name}
-    size={size} 
-    color={color} 
-  />
-);
 
 export default function TabLayout() {
   const { isAuthenticated, loading, user } = useAuth();
@@ -49,75 +41,110 @@ export default function TabLayout() {
   }, [isAuthenticated, loading]);
 
   if (loading || !user) {
-    return null;
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
 
-  // Updated tab configuration with proper icon handling
-  const getTabsForRole = () => {
-    switch (user.role) {
-      case 'client':
-        return [
-          { name: 'index', title: 'Home', icon: 'home' },
-          { name: 'search', title: 'Search', icon: 'search' },
-          { name: 'saved', title: 'Wishlist', icon: 'heart' },
-          { name: 'orders', title: 'Orders', icon: 'receipt' },
-          { name: 'profile', title: 'Profile', icon: 'person' }
-        ];
-
-      case 'company':
-        return [
-          { name: 'index', title: 'Home', icon: 'home' },
-          { name: 'company_dashboard', title: 'Dashboard', icon: 'business' },
-          { name: 'orders', title: 'Orders', icon: 'receipt' },
-          { name: 'profile', title: 'Profile', icon: 'person' }
-        ];
-
-      case 'admin':
-        return [
-          { name: 'index', title: 'Home', icon: 'home' },
-          { name: 'admin_dashboard', title: 'Admin Panel', icon: 'shield' },
-          { name: 'support', title: 'Support', icon: 'help-circle' },
-          { name: 'profile', title: 'Profile', icon: 'person' }
-        ];
-
-      default:
-        return [
-          { name: 'index', title: 'Home', icon: 'home' },
-          { name: 'profile', title: 'Profile', icon: 'person' }
-        ];
-    }
-  };
-
-  const tabs = getTabsForRole();
-
+  // --- START OF THE FIX ---
+  // We declare all screens but conditionally set their `href` to null to hide them.
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#22bb22',
-        tabBarInactiveTintColor: '#606060',
+        tabBarActiveTintColor: '#007AFF',
+        tabBarInactiveTintColor: '#8e8e93',
+        tabBarStyle: { backgroundColor: '#fff' },
         headerShown: false,
       }}
     >
-      {tabs.map((tab) => (
-        <Tabs.Screen
-          key={tab.name}
-          name={tab.name}
-          options={{
-            title: tab.title,
-            tabBarIcon: ({ color, size, focused }) => (
-              <TabIcon 
-                focused={focused} 
-                name={getIconName(tab.icon, focused)} // Use the mapping function
-                color={color} 
-                size={size} 
-              />
-            ),
-          }}
-        />
-      ))}
-      
-      {/* Hidden screens */}
-      <Tabs.Screen name="furniture/[id]" options={{ href: null }} />
+      {/* Common Tabs for ALL roles */}
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ focused, color, size }) => (
+            <TabIcon focused={focused} name={getIconName('home', focused)} color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ focused, color, size }) => (
+            <TabIcon focused={focused} name={getIconName('person', focused)} color={color} size={size} />
+          ),
+        }}
+      />
+
+      {/* --- Client-Only Tabs --- */}
+      <Tabs.Screen
+        name="search"
+        options={{
+          title: 'Search',
+          href: user.role === 'client' ? '/search' : null,
+          tabBarIcon: ({ focused, color, size }) => (
+            <TabIcon focused={focused} name={getIconName('search', focused)} color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="saved"
+        options={{
+          title: 'Wishlist',
+          href: user.role === 'client' ? '/saved' : null,
+          tabBarIcon: ({ focused, color, size }) => (
+            <TabIcon focused={focused} name={getIconName('heart', focused)} color={color} size={size} />
+          ),
+        }}
+      />
+
+      {/* --- Company-Only Tabs --- */}
+      <Tabs.Screen
+        name="company_dashboard"
+        options={{
+          title: 'Dashboard',
+          href: user.role === 'company' ? '/company_dashboard' : null,
+          tabBarIcon: ({ focused, color, size }) => (
+            <TabIcon focused={focused} name={getIconName('business', focused)} color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="orders"
+        options={{
+          title: 'Orders',
+          href: user.role === 'company' ? '/orders' : null,
+          tabBarIcon: ({ focused, color, size }) => (
+            <TabIcon focused={focused} name={getIconName('receipt', focused)} color={color} size={size} />
+          ),
+        }}
+      />
+
+      {/* --- Admin-Only Tabs --- */}
+      <Tabs.Screen
+        name="admin_dashboard"
+        options={{
+          title: 'Dashboard',
+          href: user.role === 'admin' ? '/admin_dashboard' : null,
+          tabBarIcon: ({ focused, color, size }) => (
+            <TabIcon focused={focused} name={getIconName('shield', focused)} color={color} size={size} />
+          ),
+        }}
+      />
+       <Tabs.Screen
+        name="support"
+        options={{
+          title: 'Support',
+          href: user.role === 'admin' || user.role === 'company' || user.role === 'client' ? '/support' : null,
+          tabBarIcon: ({ focused, color, size }) => (
+            <TabIcon focused={focused} name={getIconName('help-circle', focused)} color={color} size={size} />
+          ),
+        }}
+      />
     </Tabs>
   );
+  // --- END OF THE FIX ---
 }

@@ -1,9 +1,9 @@
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, Modal, TextInput, ScrollView } from 'react-native';
 import React, { useState } from 'react';
-import useFetch from '@/services/useFetch';
-import { getMyTickets, createTicket } from '@/services/api';
-import { useAuth } from '@/context/AuthContext';
-import { useRoleAccess } from '@/lib/useRoleAcess';
+import useFetch from '../../services/useFetch';
+import { getMyTickets, createTicket } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { useRoleAccess } from '../../lib/useRoleAcess';
 
 const initialTicketState = { subject: '', message: '', category: 'general', priority: 'medium' };
 
