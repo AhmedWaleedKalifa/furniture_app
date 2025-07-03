@@ -22,7 +22,7 @@ const Profile = () => {
   if (!user) {
     return (
       <View className="flex-1 bg-w-200 justify-center items-center px-5 gap-y-4">
-        {/* ... Login/Signup prompt from previous step ... */}
+        {/* ... Login/Signup prompt ... */}
       </View>
     );
   }
@@ -44,7 +44,6 @@ const Profile = () => {
           </View>
           
           <View className="px-5">
-            {/* Role-specific dashboards */}
             {user.role === 'admin' && (
                 <ProfileLink label="Admin Dashboard" onPress={() => router.push('/admin_dashboard')} />
             )}
@@ -52,8 +51,11 @@ const Profile = () => {
                 <ProfileLink label="Company Dashboard" onPress={() => router.push('/company_dashboard')} />
             )}
 
-            {/* General user features */}
-            <ProfileLink label="My Orders" onPress={() => router.push('/orders')} />
+            {/* FIX: "My Orders" link should only be for clients */}
+            {user.role === 'client' && (
+              <ProfileLink label="My Orders" onPress={() => router.push('/orders')} />
+            )}
+
             <ProfileLink label="Support Tickets" onPress={() => router.push('/support')} />
             
             <TouchableOpacity onPress={logout} className="mt-8">

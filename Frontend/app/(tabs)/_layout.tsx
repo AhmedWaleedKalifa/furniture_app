@@ -4,7 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { ActivityIndicator, View, Text } from 'react-native';
 
-// This is a helper component, no changes needed here.
 const TabIcon = ({ focused, name, color, size }: {
   focused: boolean;
   name: keyof typeof Ionicons.glyphMap;
@@ -14,7 +13,6 @@ const TabIcon = ({ focused, name, color, size }: {
   <Ionicons name={name} size={size} color={color} />
 );
 
-// This is a helper function, no changes needed here.
 const getIconName = (iconName: string, focused: boolean): keyof typeof Ionicons.glyphMap => {
   const iconMapping: Record<string, { focused: string; outline: string }> = {
     'home': { focused: 'home', outline: 'home-outline' },
@@ -48,8 +46,6 @@ export default function TabLayout() {
     );
   }
 
-  // --- START OF THE FIX ---
-  // We declare all screens but conditionally set their `href` to null to hide them.
   return (
     <Tabs
       screenOptions={{
@@ -59,7 +55,6 @@ export default function TabLayout() {
         headerShown: false,
       }}
     >
-      {/* Common Tabs for ALL roles */}
       <Tabs.Screen
         name="index"
         options={{
@@ -79,7 +74,6 @@ export default function TabLayout() {
         }}
       />
 
-      {/* --- Client-Only Tabs --- */}
       <Tabs.Screen
         name="search"
         options={{
@@ -101,7 +95,6 @@ export default function TabLayout() {
         }}
       />
 
-      {/* --- Company-Only Tabs --- */}
       <Tabs.Screen
         name="company_dashboard"
         options={{
@@ -112,18 +105,19 @@ export default function TabLayout() {
           ),
         }}
       />
+      
+      {/* FIX: Orders tab should only be visible to clients */}
       <Tabs.Screen
         name="orders"
         options={{
-          title: 'Orders',
-          href: user.role === 'company' ? '/orders' : null,
+          title: 'My Orders',
+          href: user.role === 'client' ? '/orders' : null,
           tabBarIcon: ({ focused, color, size }) => (
             <TabIcon focused={focused} name={getIconName('receipt', focused)} color={color} size={size} />
           ),
         }}
       />
 
-      {/* --- Admin-Only Tabs --- */}
       <Tabs.Screen
         name="admin_dashboard"
         options={{
@@ -146,5 +140,4 @@ export default function TabLayout() {
       />
     </Tabs>
   );
-  // --- END OF THE FIX ---
 }

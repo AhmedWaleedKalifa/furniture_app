@@ -13,20 +13,22 @@ const initialFormState = {
     price: '',
     modelUrl: '',
     thumbnailUrl: '',
-    dimensions: { width: '', height: '', depth: '', unit: 'cm' }
+    dimensions: { width: '', height: '', depth: '', unit: 'cm' },
+    customizable: { color: true, material: false }
 };
 
 const CompanyDashboard = () => {
     const { token } = useAuth();
-    const { hasAccess, isLoading } = useCompanyOnly();    const { data: products, loading, error, refetch } = useFetch(() => getCompanyProducts(token!), !!token);
+    const { hasAccess, isLoading } = useCompanyOnly();    
+    const { data: products, loading, error, refetch } = useFetch(() => getCompanyProducts(token!), !!token);
     
     const [isModalVisible, setModalVisible] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState(initialFormState);
 
     const handleCreateProduct = async () => {
-        if (!formData.name || !formData.description || !formData.price || !formData.thumbnailUrl) {
-            return Alert.alert('Error', 'Please fill all required fields.');
+        if (!formData.name || !formData.description || !formData.price || !formData.thumbnailUrl || !formData.modelUrl) {
+            return Alert.alert('Error', 'Please fill all required fields, including Name, Description, Price, Thumbnail URL, and Model URL.');
         }
 
         setIsSubmitting(true);
@@ -109,6 +111,32 @@ const CompanyDashboard = () => {
                     <TextInput placeholder="Category" value={formData.category} onChangeText={t => setFormData(p => ({...p, category: t}))} className="bg-g-100 p-3 rounded-lg mb-3" />
                     <TextInput placeholder="Thumbnail URL" value={formData.thumbnailUrl} onChangeText={t => setFormData(p => ({...p, thumbnailUrl: t}))} className="bg-g-100 p-3 rounded-lg mb-3" />
                     <TextInput placeholder="3D Model URL" value={formData.modelUrl} onChangeText={t => setFormData(p => ({...p, modelUrl: t}))} className="bg-g-100 p-3 rounded-lg mb-3" />
+                    
+                    {/* FIX: Add input fields for dimensions */}
+                    <Text className="text-bl font-semibold mt-4 mb-2">Dimensions (cm)</Text>
+                    <View className="flex-row gap-x-2">
+                        <TextInput 
+                            placeholder="Width" 
+                            value={formData.dimensions.width} 
+                            onChangeText={t => setFormData(p => ({...p, dimensions: {...p.dimensions, width: t}}))} 
+                            className="bg-g-100 p-3 rounded-lg mb-3 flex-1" 
+                            keyboardType="numeric" 
+                        />
+                        <TextInput 
+                            placeholder="Height" 
+                            value={formData.dimensions.height} 
+                            onChangeText={t => setFormData(p => ({...p, dimensions: {...p.dimensions, height: t}}))} 
+                            className="bg-g-100 p-3 rounded-lg mb-3 flex-1" 
+                            keyboardType="numeric" 
+                        />
+                        <TextInput 
+                            placeholder="Depth" 
+                            value={formData.dimensions.depth} 
+                            onChangeText={t => setFormData(p => ({...p, dimensions: {...p.dimensions, depth: t}}))} 
+                            className="bg-g-100 p-3 rounded-lg mb-3 flex-1" 
+                            keyboardType="numeric" 
+                        />
+                    </View>
                     
                     <TouchableOpacity onPress={handleCreateProduct} className="bg-br p-4 rounded-lg mt-4" disabled={isSubmitting}>
                         {isSubmitting ? <ActivityIndicator color="#fff" /> : <Text className="text-w-100 text-center font-bold">Submit for Approval</Text>}
