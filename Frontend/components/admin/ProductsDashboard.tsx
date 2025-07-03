@@ -13,13 +13,14 @@ import {
 } from 'react-native';
 import useFetch from '@/services/useFetch';
 import { getPendingProducts, approveProduct, rejectProduct, deleteProduct } from '@/services/api';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 interface ProductsDashboardProps {
   token: string;
 }
 
 interface Product {
-  id: string; // Ensure id exists
+  id: string; 
   name: string;
   description: string;
   price: number;
@@ -32,6 +33,8 @@ interface Product {
   createdAt: string;
 }
 const ProductsDashboard: React.FC<ProductsDashboardProps> = ({ token }) => {
+  // FIX: Get the global refresh trigger from the auth context
+  const { triggerGlobalRefresh } = useAuth();
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [rejectReason, setRejectReason] = useState('');
@@ -47,7 +50,8 @@ const ProductsDashboard: React.FC<ProductsDashboardProps> = ({ token }) => {
       setLoading(true);
       await approveProduct(token, productId);
       Alert.alert('Success', 'Product approved successfully');
-      refetch();
+      refetch(); // Refreshes this component's list
+      triggerGlobalRefresh(); // FIX: Notifies the rest of the app to refresh
     } catch (error: any) {
       Alert.alert('Error', error.message);
     } finally {
@@ -69,6 +73,7 @@ const ProductsDashboard: React.FC<ProductsDashboardProps> = ({ token }) => {
       setRejectReason('');
       setSelectedProduct(null);
       refetch();
+      triggerGlobalRefresh(); // FIX: Notifies the rest of the app to refresh
     } catch (error: any) {
       Alert.alert('Error', error.message);
     } finally {
@@ -91,6 +96,7 @@ const ProductsDashboard: React.FC<ProductsDashboardProps> = ({ token }) => {
               await deleteProduct(token, product.id);
               Alert.alert('Success', 'Product deleted successfully');
               refetch();
+              triggerGlobalRefresh(); // FIX: Notifies the rest of the app to refresh
             } catch (error: any) {
               Alert.alert('Error', error.message);
             } finally {
@@ -139,14 +145,6 @@ const ProductsDashboard: React.FC<ProductsDashboardProps> = ({ token }) => {
         </TouchableOpacity>
         
         <TouchableOpacity
-          style={[styles.actionButton, styles.rejectButton]}
-          onPress={() => openRejectModal(item)}
-          disabled={loading}
-        >
-          <Text style={styles.actionButtonText}>❌ Reject</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
           style={[styles.actionButton, styles.deleteButton]}
           onPress={() => handleDelete(item)}
           disabled={loading}
@@ -189,7 +187,7 @@ const ProductsDashboard: React.FC<ProductsDashboardProps> = ({ token }) => {
       <FlatList
         data={products || []}
         renderItem={renderProduct}
-        keyExtractor={(item) => item.id} // Now TypeScript knows item has id
+        keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={

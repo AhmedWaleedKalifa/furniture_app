@@ -1,15 +1,29 @@
-import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
-import React from 'react';
-import useFetch from '../../services/useFetch';
-import { getMyOrders } from '../../services/api';
-import { useAuth } from '../../context/AuthContext';
-import { useRoleAccess } from '../../lib/useRoleAcess';
+import {
+  View,
+  Text,
+  FlatList,
+  ActivityIndicator,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
+import React, { useEffect } from "react";
+import useFetch from "../../services/useFetch";
+import { getMyOrders } from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
+import { useRoleAccess } from "../../lib/useRoleAcess";
 
 const OrdersScreen = () => {
-  const { token, user } = useAuth();
-  const { hasAccess } = useRoleAccess(['client', 'company']);
-  const { data: orders, loading, error, refetch } = useFetch(() => getMyOrders(token!), !!token);
-
+  const { token, user, globalRefreshKey } = useAuth();
+  const { hasAccess } = useRoleAccess(["client"]);
+  const {
+    data: orders,
+    loading,
+    error,
+    refetch,
+  } = useFetch(() => getMyOrders(token!), !!token);
+  useEffect(() => {
+    if (token) refetch();
+  }, [globalRefreshKey]);
   if (!hasAccess) {
     return (
       <View className="flex-1 justify-center items-center">
@@ -19,12 +33,17 @@ const OrdersScreen = () => {
   }
 
   const getStatusColor = (status: string) => {
-    switch(status) {
-      case 'processing': return 'bg-blue-100 text-blue-800';
-      case 'shipped': return 'bg-yellow-100 text-yellow-800';
-      case 'delivered': return 'bg-green-100 text-green-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+    switch (status) {
+      case "processing":
+        return "bg-blue-100 text-blue-800";
+      case "shipped":
+        return "bg-yellow-100 text-yellow-800";
+      case "delivered":
+        return "bg-green-100 text-green-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -33,24 +52,25 @@ const OrdersScreen = () => {
       `${action} Order`,
       `Are you sure you want to ${action.toLowerCase()} this order?`,
       [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: action, 
+        { text: "Cancel", style: "cancel" },
+        {
+          text: action,
           onPress: () => {
             // Implement order action logic
-            Alert.alert('Success', `Order ${action.toLowerCase()}ed successfully!`);
+            Alert.alert(
+              "Success",
+              `Order ${action.toLowerCase()}ed successfully!`
+            );
             refetch();
-          }
-        }
+          },
+        },
       ]
     );
   };
 
   return (
     <View className="flex-1 bg-white px-5 pt-8">
-      <Text className="text-2xl font-bold text-bl mb-6">
-        {user?.role === 'company' ? 'Customer Orders' : 'My Orders'}
-      </Text>
+      <Text className="text-2xl font-bold text-bl mb-6">My Orders</Text>
 
       {loading && <ActivityIndicator size="large" color="#22bb22" />}
       {error && <Text className="text-red-500">{error.message}</Text>}
@@ -64,15 +84,19 @@ const OrdersScreen = () => {
               <Text className="text-lg font-semibold text-bl">
                 Order #{item.id.substring(0, 8)}
               </Text>
-              <Text className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(item.orderStatus)}`}>
+              <Text
+                className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                  item.orderStatus
+                )}`}
+              >
                 {item.orderStatus}
               </Text>
             </View>
-            
+
             <Text className="text-2xl font-bold text-accent mb-2">
               ${item.totalPrice.toFixed(2)}
             </Text>
-            
+
             <Text className="text-g-200 mb-3">
               Date: {new Date(item.createdAt).toLocaleDateString()}
             </Text>
@@ -85,29 +109,11 @@ const OrdersScreen = () => {
                 </Text>
               ))}
             </View>
-
-            {/* Role-specific actions */}
-            {user?.role === 'company' && item.orderStatus === 'processing' && (
-              <View className="flex-row gap-2 mt-3">
-                <TouchableOpacity 
-                  className="flex-1 bg-accent py-2 rounded-lg"
-                  onPress={() => handleOrderAction(item.id, 'Ship')}
-                >
-                  <Text className="text-white text-center font-medium">Ship Order</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  className="flex-1 bg-red-500 py-2 rounded-lg"
-                  onPress={() => handleOrderAction(item.id, 'Cancel')}
-                >
-                  <Text className="text-white text-center font-medium">Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            )}
           </View>
         )}
         ListEmptyComponent={
           <Text className="text-center text-g-200 mt-8">
-            {user?.role === 'company' ? 'No customer orders yet.' : 'You have no orders.'}
+            You have no orders.
           </Text>
         }
         showsVerticalScrollIndicator={false}

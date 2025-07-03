@@ -1,5 +1,6 @@
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, Modal, TextInput, ScrollView, Image } from 'react-native';
-import React, { useState } from 'react';
+// FIX: Import useMemo to efficiently filter data
+import React, { useState, useMemo } from 'react';
 import useFetch from '../../services/useFetch';
 import { getCompanyProducts, createProduct } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -18,13 +19,23 @@ const initialFormState = {
 };
 
 const CompanyDashboard = () => {
-    const { token } = useAuth();
-    const { hasAccess, isLoading } = useCompanyOnly();    
-    const { data: products, loading, error, refetch } = useFetch(() => getCompanyProducts(token!), !!token);
+    // FIX: Get the full user object to access the user's ID (uid)
+    const { token, user } = useAuth();
+    const { hasAccess, isLoading: roleIsLoading } = useCompanyOnly();    
+    // FIX: Rename fetched data to 'allProducts' to reflect it contains products from all companies
+    const { data: allProducts, loading: fetchIsLoading, error, refetch } = useFetch(() => getCompanyProducts(token!), !!token);
     
     const [isModalVisible, setModalVisible] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState(initialFormState);
+
+    // FIX: Create a new memoized list that filters 'allProducts' to only show items
+    // belonging to the currently logged-in company.
+    const products = useMemo(() => {
+        if (!allProducts || !user) return [];
+        return allProducts.filter(product => product.companyId === user.uid);
+    }, [allProducts, user]);
+
 
     const handleCreateProduct = async () => {
         if (!formData.name || !formData.description || !formData.price || !formData.thumbnailUrl || !formData.modelUrl) {
@@ -53,6 +64,9 @@ const CompanyDashboard = () => {
             setIsSubmitting(false);
         }
     };
+    
+    const isLoading = roleIsLoading || fetchIsLoading;
+
     if (isLoading) {
         return (
           <View className="flex-1 justify-center items-center">
@@ -76,10 +90,11 @@ const CompanyDashboard = () => {
                 <Text className="text-w-100 text-center font-bold">Add New Product</Text>
             </TouchableOpacity>
             
-            {loading && <ActivityIndicator size="large" />}
+            {fetchIsLoading && <ActivityIndicator size="large" />}
             {error && <Text className="text-red-500">{error.message}</Text>}
             
             <FlatList
+                // FIX: Use the new, correctly filtered 'products' array
                 data={products}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (

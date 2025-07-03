@@ -12,24 +12,11 @@ import {
 import useFetch from '../../services/useFetch';
 import { getAllUsers, updateUserRole, deleteUser } from '../../services/api';
 import RolePicker from '../RolePicker';
-// FIX: Import the single source of truth for the User type
 import { User } from '../../types/index';
 
 interface UsersDashboardProps {
   token: string;
 }
-
-// FIX: Remove the redundant local User interface definition
-/*
-interface User {
-  id: string; // Ensure id exists
-  displayName: string;
-  email: string;
-  role: 'client' | 'company' | 'admin';
-  createdAt: string;
-  isVerified?: boolean;
-}
-*/
 
 const UsersDashboard: React.FC<UsersDashboardProps> = ({ token }) => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -37,7 +24,6 @@ const UsersDashboard: React.FC<UsersDashboardProps> = ({ token }) => {
   const [newRole, setNewRole] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
-  // FIX: This now uses the correct User type from the import
   const { data: users, loading: fetchLoading, error, refetch } = useFetch<User[]|null>(
     () => getAllUsers(token),
     !!token
@@ -48,7 +34,6 @@ const UsersDashboard: React.FC<UsersDashboardProps> = ({ token }) => {
 
     try {
       setLoading(true);
-      // FIX: Use uid, which is correct based on your global type
       await updateUserRole(token, selectedUser.uid, newRole); 
       Alert.alert('Success', 'User role updated successfully');
       setShowRoleModal(false);
@@ -73,7 +58,6 @@ const UsersDashboard: React.FC<UsersDashboardProps> = ({ token }) => {
           onPress: async () => {
             try {
               setLoading(true);
-              // FIX: Use uid, which is correct based on your global type
               await deleteUser(token, user.uid);
               Alert.alert('Success', 'User deleted successfully');
               refetch();

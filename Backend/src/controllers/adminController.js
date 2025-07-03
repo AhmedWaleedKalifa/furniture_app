@@ -1,4 +1,5 @@
 const { getFirestore } = require('../config/firebase');
+const { getAuth } = require('firebase-admin/auth');
 
 // Get pending products for approval
 const getPendingProducts = async (req, res) => {
@@ -341,6 +342,48 @@ const deleteProduct = async (req, res) => {
   }
 };
 
+const deleteUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const auth = getAuth();
+    const db = getFirestore();
+
+    // Get user document
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Prevent deleting admin users
+    const userData = userDoc.data();
+    if (userData.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Cannot delete admin users'
+      });
+    }
+
+    // Delete from Firebase Auth
+    await auth.deleteUser(userId);
+
+    // Delete from Firestore
+    await db.collection('users').doc(userId).delete();
+
+    res.status(200).json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting user'
+    });
+  }
+};
 
 module.exports = {
   getPendingProducts,
@@ -349,5 +392,6 @@ module.exports = {
   getAllUsers,
   updateUserRole,
   getProductAnalytics,
-  deleteProduct
+  deleteProduct,
+  deleteUser
 }; 

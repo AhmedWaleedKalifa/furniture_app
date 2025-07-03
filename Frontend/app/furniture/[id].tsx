@@ -70,7 +70,7 @@ const FurnitureDetails = () => {
               };
 
               await createOrder(token, orderData);
-
+              triggerGlobalRefresh();
               Alert.alert('Success', 'Order placed successfully!');
               router.push('/(tabs)/orders');
             } catch (error: any) {

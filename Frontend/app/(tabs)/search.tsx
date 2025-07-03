@@ -5,26 +5,41 @@ import useFetch from "@/services/useFetch";
 import { fetchFurniture } from "@/services/api";
 import Card from "@/components/Card";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { Product } from "@/types";
 
 const Search = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const { data: allFurniture, loading, error } = useFetch(fetchFurniture);
+  const { data: allFurniture, loading, error } = useFetch<Product[] | null>(fetchFurniture);
   const [filteredFurniture, setFilteredFurniture] = useState<Product[] | null>([]);
+  const { user } = useAuth(); // Get user from context
 
   useEffect(() => {
+    if (!allFurniture) {
+      setFilteredFurniture([]);
+      return;
+    }
+
+    // Determine the base list of products based on user role
+    let baseList = allFurniture;
+    if (user?.role === 'client') {
+      baseList = allFurniture.filter(item => item.isApproved);
+    }
+    
+    // Apply search query filtering on the base list
     if (searchQuery.trim() === '') {
-      // When the search query is empty, show all furniture.
-      setFilteredFurniture(allFurniture);
+      // When the search query is empty, show the role-appropriate list.
+      setFilteredFurniture(baseList);
     } else {
-      // When the user types, filter the furniture list.
-      const filtered = allFurniture?.filter(item => 
+      // When the user types, filter the base list.
+      const filtered = baseList.filter(item => 
         item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.description.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setFilteredFurniture(filtered || []);
     }
-  }, [searchQuery, allFurniture]);
+  }, [searchQuery, allFurniture, user]);
 
   return (
     <View className="flex-1 bg-w-200">

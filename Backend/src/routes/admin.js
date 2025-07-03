@@ -18,5 +18,6 @@ router.get('/analytics', adminController.getProductAnalytics);
 // User management
 router.get('/users', adminController.getAllUsers);
 router.put('/users/:userId/role', adminController.updateUserRole);
+router.delete('/users/:userId', adminController.deleteUser);
 
 module.exports = router; 

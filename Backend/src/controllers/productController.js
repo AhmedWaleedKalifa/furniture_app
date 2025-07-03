@@ -55,9 +55,9 @@ const getProducts = async (req, res) => {
     let query = db.collection('products');
 
     // Apply filters
-    if (approved !== undefined) {
-      query = query.where('isApproved', '==', approved === 'true');
-    }
+    // if (approved !== undefined) {
+    //   query = query.where('isApproved', '==', approved === 'true' || approved === true);
+    // }
 
     if (category) {
       query = query.where('category', '==', category);

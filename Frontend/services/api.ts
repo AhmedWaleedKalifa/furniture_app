@@ -122,7 +122,6 @@ export const logoutUser = async (token: string): Promise<void> => {
 // ... (at the top with other interfaces)
 export const fetchFurniture = async (): Promise<Product[]> => {
   const endpoint = `${BASE_URL}/api/products`
-  
   console.log("Fetching from endpoint:", endpoint); 
   const response = await fetch(endpoint, {
       method: 'GET',
@@ -136,6 +135,7 @@ export const fetchFurniture = async (): Promise<Product[]> => {
   }
 
   const data = await response.json();
+
   return data.data;
 }
 export const fetchFurnitureDetails = async (id:string): Promise<ProductDetails> => {
@@ -158,26 +158,6 @@ export const fetchFurnitureDetails = async (id:string): Promise<ProductDetails> 
   return data.data;
 }
 
-interface GoogleAuthResponse {
-    success: boolean;
-    message: string;
-    data: User & { token: string };
-}
-// ...
-export const signInWithGoogle = async (idToken: string): Promise<User & { token: string }> => {
-    const response = await fetch(`${BASE_URL}/api/auth/google`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken }),
-    });
-
-    const data: GoogleAuthResponse = await response.json();
-
-    if (!response.ok || !data.success) {
-        throw new Error(data.message || 'Google Sign-In failed');
-    }
-    return data.data;
-};
 
 // ... (existing auth and furniture functions)
 
@@ -335,6 +315,7 @@ export const approveProduct = async (token: string, productId: string): Promise<
     if (!response.ok || !data.success) throw new Error(data.message || 'Failed to approve product');
 }
 
+
 // ... (at the top, with other interfaces)
 
 // Define the shape of data for creating a new product
@@ -425,15 +406,13 @@ export const getSystemStats = async (token: string) => {
 
 // Delete User
 export const deleteUser = async (token: string, userId: string): Promise<void> => {
-    const response = await fetch(`${BASE_URL}/api/admin/users/${userId}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders(token)
-    });
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(data.message || 'Failed to delete user');
-    }
-  };
+  const response = await fetch(`${BASE_URL}/api/admin/users/${userId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(token),
+  });
+  const data = await response.json();
+  if (!response.ok || !data.success) throw new Error(data.message || 'Failed to delete user');
+};
   
   // Update Order Status
   export const updateOrderStatus = async (
@@ -478,8 +457,3 @@ export const deleteUser = async (token: string, userId: string): Promise<void> =
     return data.data;
   };
   
-  // Frontend/services/api.ts
-
-// ... (keep all existing functions like loginUser, fetchFurniture, etc.)
-
-// THIS IS THE NEW FUNCTION TO ADD
