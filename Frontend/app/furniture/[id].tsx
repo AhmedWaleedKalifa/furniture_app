@@ -41,19 +41,17 @@ const FurnitureDetails = () => {
       router.push('/login');
       return;
     }
-    
     if (!furniture?.isApproved) {
-        Alert.alert("Not Available", "This product is not yet available for purchase.");
-        return;
+      Alert.alert("Not Available", "This product is not yet available for purchase.");
+      return;
     }
-    
     Alert.alert(
       'Confirm Order',
       `Are you sure you want to order ${furniture?.name}?`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Confirm Order', 
+        {
+          text: 'Confirm Order',
           onPress: async () => {
             if (!token || !furniture) return;
             setIsOrdering(true);
@@ -68,7 +66,6 @@ const FurnitureDetails = () => {
                 },
                 paymentMethod: "credit_card"
               };
-
               await createOrder(token, orderData);
               triggerGlobalRefresh();
               Alert.alert('Success', 'Order placed successfully!');

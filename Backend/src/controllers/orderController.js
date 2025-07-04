@@ -1,9 +1,9 @@
 const { getFirestore } = require('../config/firebase');
-const { db } = require('../config/firebase');
 
 // Create new order (checkout)
 const createOrder = async (req, res) => {
   try {
+    const db = getFirestore(); // Always get a fresh instance
       const { items, shippingAddress, paymentMethod } = req.body;
       const userId = req.user.uid;
       const userEmail = req.user.email;
@@ -80,6 +80,8 @@ const createOrder = async (req, res) => {
 */
 const getUserOrders = async (req, res) => {
   try {
+    const db = getFirestore(); // Always get a fresh instance
+
       const userId = req.user.uid;
       const ordersSnapshot = await db.collection('orders').where('userId', '==', userId).orderBy('createdAt', 'desc').get();
       
@@ -100,7 +102,7 @@ const getUserOrders = async (req, res) => {
 const getOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const db = getFirestore();
+    const db = getFirestore(); // Always get a fresh instance
     
     const orderDoc = await db.collection('orders').doc(orderId).get();
     
@@ -311,3 +313,4 @@ module.exports = {
   cancelOrder,
   getCompanyOrders
 }; 
+

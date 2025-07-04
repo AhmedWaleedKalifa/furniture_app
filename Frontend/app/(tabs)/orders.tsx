@@ -67,7 +67,8 @@ const OrdersScreen = () => {
       ]
     );
   };
-
+ 
+  if (!orders || orders.length === 0) return <Text>No orders found.</Text>;
   return (
     <View className="flex-1 bg-white px-5 pt-8">
       <Text className="text-2xl font-bold text-bl mb-6">My Orders</Text>
