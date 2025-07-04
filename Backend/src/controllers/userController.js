@@ -687,10 +687,10 @@ const saveScene = async (req, res) => {
     
     const sceneData = {
       userId: req.user.uid,
-      name,
-      description,
-      roomDimensions,
-      furnitureItems,
+      name: name || '', // If name is undefined, use empty string
+      description: description !== undefined ? description : '', // If undefined, use empty string
+      roomDimensions: roomDimensions || {}, // If undefined, use empty object
+      furnitureItems: furnitureItems || [], 
       isPublic,
       thumbnailUrl: null, // Will be set when screenshot is uploaded
       likes: 0,
@@ -819,13 +819,13 @@ const updateSavedScene = async (req, res) => {
       updatedAt: new Date()
     };
 
-    if (name) updateData.name = name;
+    if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
-    if (roomDimensions) updateData.roomDimensions = roomDimensions;
-    if (furnitureItems) updateData.furnitureItems = furnitureItems;
+    if (roomDimensions !== undefined) updateData.roomDimensions = roomDimensions;
+    if (furnitureItems !== undefined) updateData.furnitureItems = furnitureItems;
     if (isPublic !== undefined) updateData.isPublic = isPublic;
-    if (thumbnailUrl) updateData.thumbnailUrl = thumbnailUrl;
-
+    if (thumbnailUrl !== undefined) updateData.thumbnailUrl = thumbnailUrl;
+    
     await db.collection('savedScenes').doc(sceneId).update(updateData);
 
     res.status(200).json({
