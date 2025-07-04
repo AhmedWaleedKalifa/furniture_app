@@ -1,4 +1,5 @@
 const { getAuth, getFirestore } = require('../config/firebase');
+const { auth: adminAuth, db } = require('../config/firebase');
 
 // Verify Firebase Auth token
 const verifyToken = async (req, res, next) => {

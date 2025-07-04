@@ -63,15 +63,7 @@ export interface Order {
   orderNumber?: string;
 }
 
-export interface SupportTicket {
-  id: string;
-  subject: string;
-  message: string;
-  status: 'open' | 'in_progress' | 'resolved' | 'closed';
-  priority: 'low' | 'medium' | 'high';
-  category: string;
-  createdAt: string;
-}
+
 
 export interface AdminStats {
   users: {
@@ -107,3 +99,26 @@ export interface WishlistItem {
   price: number;
   productImage: string;
 }
+
+export interface TicketMessage {
+    id: string;
+    senderId: string;
+    senderName: string;
+    senderType: 'user' | 'agent' | 'system';
+    message: string;
+    timestamp: string; // The backend sends this as a string, which we convert to Date
+  }
+  export interface SupportTicket {
+    id: string;
+   userId: string;
+   userName: string;
+   userEmail: string;
+    subject: string;
+
+   description: string; // The initial message/description
+    status: 'open' | 'in_progress' | 'resolved' | 'closed';
+    priority: 'low' | 'medium' | 'high';
+    category: string;
+   messages: TicketMessage[]; // The array of all replies
+   createdAt: string; 
+  }

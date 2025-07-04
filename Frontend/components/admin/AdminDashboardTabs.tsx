@@ -7,6 +7,7 @@ import AnalyticsDashboard from '../../components/admin/AnalyticsDashboard';
 import StatsDashboard from './StatusDashboard';
 import UsersDashboard from './UserDashboard';
 import { useAdminOnly } from '../../lib/useRoleAcess';
+import SupportDashboard from './SupportDashboard';
 
 const AdminDashboard = () => {
   const { token } = useAuth();
@@ -37,6 +38,7 @@ const AdminDashboard = () => {
     { id: 'users', title: 'Users', icon: '👥' },
     { id: 'products', title: 'Products', icon: '🛋️' },
     { id: 'orders', title: 'Orders', icon: '📦' },
+    { id: 'support', title: 'Support', icon: '💬' },
     { id: 'analytics', title: 'Analytics', icon: '📈' },
   ];
 
@@ -48,6 +50,7 @@ const AdminDashboard = () => {
       case 'users': return <UsersDashboard token={token} />;
       case 'products': return <ProductsDashboard token={token} />;
       case 'orders': return <OrdersDashboard token={token} />;
+      case 'support': return <SupportDashboard token={token} />;
       case 'analytics': return <AnalyticsDashboard token={token} />;
       default: return <StatsDashboard token={token} />;
     }

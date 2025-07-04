@@ -38,6 +38,7 @@ if (user && inAuth) {
 
       {/* This is a modal/stack screen that can be pushed on top of the tabs. */}
       <Stack.Screen name="furniture/[id]" />
+      <Stack.Screen name="ticket/[id]" />
     </Stack>
   );
 }

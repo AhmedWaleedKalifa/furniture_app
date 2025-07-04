@@ -1,128 +1,98 @@
 const { getFirestore } = require('../config/firebase');
+const { db } = require('../config/firebase');
 
 // Create new order (checkout)
 const createOrder = async (req, res) => {
   try {
-    const { items, shippingAddress, paymentMethod } = req.body;
-    const db = getFirestore();
-    
-    // Validate items exist and calculate total
-    let totalPrice = 0;
-    const orderItems = [];
-    
-    for (const item of items) {
-      const productDoc = await db.collection('products').doc(item.productId).get();
-      
-      if (!productDoc.exists) {
-        return res.status(404).json({
-          success: false,
-          message: `Product ${item.productId} not found`
-        });
+      const { items, shippingAddress, paymentMethod } = req.body;
+      const userId = req.user.uid;
+      const userEmail = req.user.email;
+
+      if (!items || !Array.isArray(items) || items.length === 0) {
+          return res.status(400).json({ success: false, message: 'Order must contain at least one item.' });
       }
-      
-      const product = productDoc.data();
-      if (!product.isApproved) {
-        return res.status(400).json({
-          success: false,
-          message: `Product ${product.name} is not available for purchase`
-        });
-      }
-      
-      const itemTotal = product.price * item.quantity;
-      totalPrice += itemTotal;
-      
-      orderItems.push({
-        productId: item.productId,
-        productName: product.name,
-        productImage: product.thumbnailUrl,
-        quantity: item.quantity,
-        unitPrice: product.price,
-        totalPrice: itemTotal
+
+      let totalAmount = 0;
+      const orderItems = [];
+
+      // Use a transaction to ensure all-or-nothing
+      await db.runTransaction(async (transaction) => {
+          for (const item of items) {
+              const productRef = db.collection('products').doc(item.productId);
+              
+              // FIX: The result of the 'get' operation must be assigned to the productDoc variable.
+              const productDoc = await transaction.get(productRef);
+
+              if (!productDoc.exists || !productDoc.data().isApproved) {
+                  throw new Error(`Product with ID ${item.productId} not found or is not available.`);
+              }
+              
+              const productData = productDoc.data();
+              const itemTotal = productData.price * item.quantity;
+              totalAmount += itemTotal;
+
+              orderItems.push({
+                  productId: item.productId,
+                  productName: productData.name,
+                  productImage: productData.thumbnailUrl,
+                  quantity: item.quantity,
+                  unitPrice: productData.price,
+                  totalPrice: itemTotal,
+              });
+          }
       });
-    }
-    
-    // Create order
-    const orderData = {
-      userId: req.user.uid,
-      items: orderItems,
-      totalPrice,
-      currency: 'USD',
-      shippingAddress,
-      paymentMethod: paymentMethod || 'pending',
-      paymentStatus: 'pending',
-      orderStatus: 'processing',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    const orderRef = await db.collection('orders').add(orderData);
-    
-    // Update product analytics
-    for (const item of items) {
-      await db.collection('products').doc(item.productId).update({
-        purchases: (productDoc.data().purchases || 0) + item.quantity
+
+      const newOrderRef = db.collection('orders').doc();
+      const newOrder = {
+          id: newOrderRef.id,
+          userId,
+          userEmail,
+          items: orderItems,
+          totalAmount: parseFloat(totalAmount.toFixed(2)),
+          totalPrice: parseFloat(totalAmount.toFixed(2)), // For consistency with frontend type
+          shippingAddress,
+          paymentMethod,
+          paymentStatus: 'pending', // Default status
+          orderStatus: 'processing', // Default status
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+      };
+
+      await newOrderRef.set(newOrder);
+
+      res.status(201).json({
+          success: true,
+          message: 'Order created successfully',
+          data: newOrder
       });
-    }
-    
-    res.status(201).json({
-      success: true,
-      message: 'Order created successfully',
-      data: {
-        orderId: orderRef.id,
-        ...orderData
-      }
-    });
+
   } catch (error) {
-    console.error('Create order error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error creating order'
-    });
+      console.error('Create order error:', error);
+      res.status(500).json({ success: false, message: error.message || 'Server error while creating order' });
   }
 };
 
-// Get user's orders
+
+/**
+* @desc    Get orders for the logged-in user
+* @route   GET /api/orders/my-orders
+* @access  Private (Client)
+*/
 const getUserOrders = async (req, res) => {
   try {
-    const db = getFirestore();
-    const { limit = 20, offset = 0, status } = req.query;
-    
-    let query = db.collection('orders')
-      .where('userId', '==', req.user.uid)
-      .orderBy('createdAt', 'desc');
-    
-    if (status) {
-      query = query.where('orderStatus', '==', status);
-    }
-    
-    const snapshot = await query
-      .limit(parseInt(limit))
-      .offset(parseInt(offset))
-      .get();
-    
-    const orders = [];
-    snapshot.forEach(doc => {
-      orders.push({
-        id: doc.id,
-        ...doc.data()
-      });
-    });
-    
-    res.status(200).json({
-      success: true,
-      data: orders,
-      pagination: {
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        total: orders.length
+      const userId = req.user.uid;
+      const ordersSnapshot = await db.collection('orders').where('userId', '==', userId).orderBy('createdAt', 'desc').get();
+      
+      if (ordersSnapshot.empty) {
+          return res.status(200).json({ success: true, data: [] });
       }
-    });
+      
+      const orders = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      res.status(200).json({ success: true, data: orders });
   } catch (error) {
-    console.error('Get user orders error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching orders'
-    });
+      console.error('Get my orders error:', error);
+      res.status(500).json({ success: false, message: 'Server error while fetching orders' });
   }
 };
 

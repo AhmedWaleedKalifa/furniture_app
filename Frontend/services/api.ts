@@ -244,26 +244,6 @@ export const createOrder = async (token: string, orderData: CreateOrderData): Pr
   return data.data;
 };
 
-// --- Support Ticket Functions ---
-
-export const getMyTickets = async (token: string): Promise<SupportTicket[]> => {
-    const response = await fetch(`${BASE_URL}/api/support/tickets`, {
-        headers: getAuthHeaders(token)
-    });
-    const data = await response.json();
-    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch tickets');
-    return data.data;
-}
-
-export const createTicket = async (token: string, ticketData: { subject: string, message: string, priority: string, category: string }): Promise<void> => {
-    const response = await fetch(`${BASE_URL}/api/support/tickets`, {
-        method: 'POST',
-        headers: getAuthHeaders(token),
-        body: JSON.stringify(ticketData)
-    });
-    const data = await response.json();
-    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to create ticket');
-}
 
 
 // --- Admin Functions ---
@@ -457,3 +437,67 @@ export const deleteUser = async (token: string, userId: string): Promise<void> =
     return data.data;
   };
   
+
+
+// --- Support Ticket Functions ---
+
+
+export const createTicket = async (token: string, ticketData: { subject: string, message: string, priority: string, category: string }): Promise<void> => {
+  const response = await fetch(`${BASE_URL}/api/support/tickets`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(ticketData)
+  });
+  const data = await response.json();
+  if (!response.ok || !data.success) throw new Error(data.message || 'Failed to create ticket');
+}
+  export const getMyTickets = async (token: string): Promise<SupportTicket[]> => {
+    const response = await fetch(`${BASE_URL}/api/support/tickets`, {
+        headers: getAuthHeaders(token)
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch tickets');
+    return data.data;
+}
+
+
+    
+export const getAdminTickets = async (token: string): Promise<SupportTicket[]> => {
+  const response = await fetch(`${BASE_URL}/api/admin/tickets`, { // This now matches our new route
+      headers: getAuthHeaders(token)
+  });
+  const data = await response.json();
+  if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch tickets');
+  return data.data;
+}
+    // FIX: Add function to get details of a single ticket, including messages
+    export const getTicketDetails = async (token: string, ticketId: string): Promise<SupportTicket> => {
+      const response = await fetch(`${BASE_URL}/api/support/tickets/${ticketId}`, {
+          headers: getAuthHeaders(token),
+      });
+      const data: ApiResponse<SupportTicket> = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch ticket details');
+      return data.data;
+  };
+    
+    // FIX: Add function to post a reply to a ticket
+    export const addTicketReply = async (token: string, ticketId: string, message: string): Promise<void> => {
+      const response = await fetch(`${BASE_URL}/api/support/tickets/${ticketId}/reply`, {
+          method: 'POST',
+          headers: getAuthHeaders(token),
+          body: JSON.stringify({ message }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to send reply');
+  };
+    // FIX: Add function for admins to update ticket status
+  export const updateTicketStatus = async (token: string, ticketId: string, status: string): Promise<void> => {
+    const response = await fetch(`${BASE_URL}/api/admin/tickets/${ticketId}/status`, { // Note the /admin/ path
+        method: 'PUT',
+        headers: getAuthHeaders(token),
+        body: JSON.stringify({ status }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update status');
+};
+
