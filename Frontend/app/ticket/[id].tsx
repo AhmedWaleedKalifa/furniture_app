@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import useFetch from '@/services/useFetch';
 import { getTicketDetails, addTicketReply, updateTicketStatus } from '@/services/api';
@@ -29,7 +29,6 @@ const TicketDetailsScreen = () => {
   );
 
   useEffect(() => {
-    // Scroll to bottom when new messages arrive
     scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [ticket?.messages]);
 
@@ -103,15 +102,15 @@ const TicketDetailsScreen = () => {
         >
           {ticket.messages?.map((msg, index) => (
             <View
-              key={index}
+              key={msg.id || index}
               style={[
                 styles.messageBubble,
-                msg.senderType === 'agent' ? styles.agentBubble : styles.userBubble,
+                msg.senderId === user?.uid ? styles.userBubble : styles.agentBubble,
               ]}
             >
-              <Text style={styles.senderName}>{msg.senderName} ({msg.senderType})</Text>
-              <Text style={styles.messageText}>{msg.message}</Text>
-              <Text style={styles.messageTimestamp}>
+              <Text style={[styles.senderName, msg.senderId === user?.uid && styles.userSenderName]}>{msg.senderName} ({msg.senderType})</Text>
+              <Text style={[styles.messageText, msg.senderId === user?.uid && styles.userMessageText]}>{msg.message}</Text>
+              <Text style={[styles.messageTimestamp, msg.senderId === user?.uid && styles.userTimestamp]}>
                 {new Date(msg.timestamp).toLocaleString()}
               </Text>
             </View>
@@ -127,9 +126,9 @@ const TicketDetailsScreen = () => {
             multiline
           />
           <TouchableOpacity 
-            style={[styles.sendButton, isSubmitting && styles.sendButtonDisabled]} 
+            style={[styles.sendButton, (isSubmitting || !reply.trim()) && styles.sendButtonDisabled]} 
             onPress={handleSendReply}
-            disabled={isSubmitting}
+            disabled={isSubmitting || !reply.trim()}
           >
             {isSubmitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.sendButtonText}>Send</Text>}
           </TouchableOpacity>
@@ -139,8 +138,6 @@ const TicketDetailsScreen = () => {
   );
 };
 
-// ... Add the styles from the previous SupportDashboard component, 
-// but here are the specific ones for this screen.
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f0f2f5' },
   header: { padding: 16, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#ddd', paddingTop: 50 },
@@ -149,21 +146,22 @@ const styles = StyleSheet.create({
   statusText: { color: 'white', fontSize: 12, fontWeight: 'bold' },
   adminControls: { padding: 16, backgroundColor: '#f8f9fa', borderBottomWidth: 1, borderBottomColor: '#ddd' },
   adminLabel: { marginBottom: 8, fontWeight: 'bold' },
-  messagesContainer: { padding: 16 },
-  messageBubble: { maxWidth: '80%', padding: 12, borderRadius: 12, marginBottom: 12 },
-  userBubble: { backgroundColor: '#007AFF', alignSelf: 'flex-end' },
-  agentBubble: { backgroundColor: '#e5e5ea', alignSelf: 'flex-start' },
-  senderName: { fontWeight: 'bold', marginBottom: 4, color: '#333' },
-  userBubble_senderName: { color: 'white' }, // Example for specific styling
-  messageText: { fontSize: 16, color: '#333' },
+  messagesContainer: { padding: 16, paddingBottom: 20 },
+  messageBubble: { maxWidth: '80%', padding: 12, borderRadius: 18, marginBottom: 12 },
+  userBubble: { backgroundColor: '#007AFF', alignSelf: 'flex-end', borderBottomRightRadius: 4 },
+  agentBubble: { backgroundColor: '#e5e5ea', alignSelf: 'flex-start', borderBottomLeftRadius: 4 },
+  senderName: { fontWeight: 'bold', marginBottom: 4, color: '#555' },
+  userSenderName: { color: '#e0eaff' },
+  messageText: { fontSize: 16, color: '#000' },
+  userMessageText: { color: 'white' },
   messageTimestamp: { fontSize: 10, color: '#999', marginTop: 4, alignSelf: 'flex-end' },
-  replyContainer: { flexDirection: 'row', padding: 8, borderTopWidth: 1, borderTopColor: '#ccc', backgroundColor: 'white' },
-  replyInput: { flex: 1, backgroundColor: '#f0f2f5', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, marginRight: 8 },
-  sendButton: { backgroundColor: '#007AFF', padding: 12, borderRadius: 20, justifyContent: 'center' },
+  userTimestamp: { color: '#e0eaff' },
+  replyContainer: { flexDirection: 'row', padding: 10, borderTopWidth: 1, borderTopColor: '#ccc', backgroundColor: 'white' },
+  replyInput: { flex: 1, backgroundColor: '#f0f2f5', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, marginRight: 8, fontSize: 16 },
+  sendButton: { backgroundColor: '#007AFF', padding: 12, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
   sendButtonDisabled: { backgroundColor: '#a0c7ff' },
   sendButtonText: { color: 'white', fontWeight: 'bold' },
   errorText: { textAlign: 'center', color: 'red', marginTop: 20 },
 });
-
 
 export default TicketDetailsScreen;

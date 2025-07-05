@@ -9,19 +9,20 @@ import {
   TextInput,
   ScrollView,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import useFetch from "../../services/useFetch";
-import { getMyTickets, createTicket } from "../../services/api";
+import { getMyTickets, createTicket, getAdminTickets } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
-import { useRoleAccess } from "../../lib/useRoleAcess";
 import StatusPicker from "../../components/admin/StatusPicker";
 import { Link } from "expo-router";
+
 const initialTicketState = {
   subject: "",
   message: "",
   category: "general",
   priority: "medium",
 };
+
 const TICKET_CATEGORIES = [
   { label: "General Inquiry", value: "general" },
   { label: "Technical Issue", value: "technical" },
@@ -37,19 +38,22 @@ const TICKET_PRIORITIES = [
 ];
 
 const SupportScreen = () => {
-  const { token } = useAuth();
-  const { hasAccess } = useRoleAccess(["admin", "company", "client"]);
+  const { user, token } = useAuth();
+  
+  // Conditionally choose the fetch function based on user role
+  const fetchFunction = user?.role === 'admin' ? () => getAdminTickets(token!) : () => getMyTickets(token!);
 
-  const {
-    data: tickets,
-    loading,
-    error,
-    refetch,
-  } = useFetch(() => getMyTickets(token!), !!token);
+  const { data: tickets, loading, error, refetch } = useFetch(fetchFunction, !!token);
 
   const [isModalVisible, setModalVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState(initialTicketState);
+
+  useEffect(() => {
+    if (token) {
+      refetch();
+    }
+  }, [user, token]);
 
   const handleCreateTicket = async () => {
     if (!formData.subject || !formData.message) {
@@ -72,25 +76,14 @@ const SupportScreen = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "open":
-        return "bg-blue-100 text-blue-800";
-      case "in_progress":
-        return "bg-yellow-100 text-yellow-800";
-      case "resolved":
-        return "bg-green-100 text-green-800";
-      case "closed":
-        return "bg-gray-100 text-gray-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+      case "open": return "bg-blue-500 text-white";
+      case "in_progress": return "bg-yellow-500 text-black";
+      case "resolved": return "bg-green-500 text-white";
+      case "closed": return "bg-gray-500 text-white";
+      default: return "bg-gray-300 text-black";
     }
   };
-  if (!hasAccess) {
-    return (
-      <View className="flex-1 justify-center items-center">
-        <Text className="text-lg text-red-500">Access Denied</Text>
-      </View>
-    );
-  }
+
   return (
     <View className="flex-1 bg-w-200 p-5 pt-16">
       <Text className="text-2xl font-bold text-bl mb-4">Support Center</Text>
@@ -104,40 +97,47 @@ const SupportScreen = () => {
       </TouchableOpacity>
 
       {loading && <ActivityIndicator size="large" />}
-      {error && <Text className="text-red-500">{error.message}</Text>}
+      {error && <Text className="text-red-500 text-center py-4">{error.message}</Text>}
 
       <FlatList
         data={tickets}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => ( 
-                               <Link href={`/ticket/${item.id}`} asChild>
-                                   <TouchableOpacity className="bg-w-100 p-4 rounded-lg mb-4 shadow-md">
-                                       <View className="flex-row justify-between items-center">
-                                           <Text className="font-bold text-lg text-bl flex-1 pr-2">{item.subject}</Text>
-                                           <Text className={`font-bold px-3 py-1 rounded-full text-xs capitalize ${getStatusColor(item.status)}`}>
-                                                {item.status.replace('_', ' ')}
-                                            </Text>
-                                      </View>
-                                        <Text className="text-g-300 mt-2" numberOfLines={2}>{item.description}</Text>
-                                        <Text className="text-g-300 mt-2 text-xs">Created: {new Date(item.createdAt).toLocaleDateString()}</Text>
-                                    </TouchableOpacity>
-                                </Link>
+          <Link href={`/ticket/${item.id}`} asChild>
+            <TouchableOpacity className="bg-w-100 p-4 rounded-lg mb-4 shadow-md">
+              <View className="flex-row justify-between items-center">
+                <Text className="font-bold text-lg text-bl flex-1 pr-2" numberOfLines={1}>{item.subject}</Text>
+                <Text className={`font-bold px-3 py-1 rounded-full text-xs capitalize ${getStatusColor(item.status)}`}>
+                  {item.status.replace('_', ' ')}
+                </Text>
+              </View>
+              {user?.role === 'admin' && (
+                <Text className="text-gray-500 mt-1">From: {item.userName}</Text>
+              )}
+              <Text className="text-g-300 mt-2" numberOfLines={2}>{item.description}</Text>
+              <Text className="text-g-300 mt-2 text-xs">Created: {new Date(item.createdAt).toLocaleDateString()}</Text>
+            </TouchableOpacity>
+          </Link>
         )}
         ListEmptyComponent={
-          <Text className="text-center text-g-300 mt-10">
-            You have no support tickets.
-          </Text>
+          // FIX: Use a ternary operator to return null instead of `false`.
+          // This satisfies TypeScript's type requirements for the prop.
+          !loading ? (
+            <View className="flex-1 justify-center items-center mt-20">
+                <Text className="text-center text-g-300 text-base">You have no support tickets.</Text>
+            </View>
+          ) : null
         }
+        contentContainerStyle={{ flexGrow: 1 }} // Ensures empty component can center
       />
 
-      {/* Create Ticket Modal */}
       <Modal
         animationType="slide"
         transparent={false}
         visible={isModalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <ScrollView className="flex-1 bg-w-200 p-5 pt-16">
+        <ScrollView className="flex-1 bg-w-200 p-5 pt-16" contentContainerStyle={{ paddingBottom: 40 }}>
           <Text className="text-2xl font-bold text-bl mb-6">
             New Support Ticket
           </Text>
@@ -161,6 +161,7 @@ const SupportScreen = () => {
             onChangeText={(t) => setFormData((p) => ({ ...p, message: t }))}
             className="bg-g-100 p-3 rounded-lg mb-3 h-32"
             multiline
+            textAlignVertical="top"
           />
           <Text className="text-bl font-semibold mb-2 mt-2">Priority</Text>
           <StatusPicker
@@ -185,7 +186,7 @@ const SupportScreen = () => {
             onPress={() => setModalVisible(false)}
             className="bg-g-200 p-4 rounded-lg mt-2"
           >
-            <Text className="text-w-100 text-center font-bold">Cancel</Text>
+            <Text className="text-bl text-center font-bold">Cancel</Text>
           </TouchableOpacity>
         </ScrollView>
       </Modal>

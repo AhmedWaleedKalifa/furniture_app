@@ -162,47 +162,22 @@ const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const db = getFirestore();
-    
     const productDoc = await db.collection('products').doc(id).get();
-    
     if (!productDoc.exists) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
+      return res.status(404).json({ success: false, message: 'Product not found' });
     }
-
     const product = productDoc.data();
-    
-    // Check if user owns this product or is admin
     if (product.companyId !== req.user.uid && req.userProfile.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. You can only update your own products.'
-      });
+      return res.status(403).json({ success: false, message: 'Access denied. You can only update your own products.' });
     }
-
-    const updateData = {
-      ...req.body,
-      updatedAt: new Date()
-    };
-
+    const updateData = { ...req.body, updatedAt: new Date() };
     await db.collection('products').doc(id).update(updateData);
-
-    res.status(200).json({
-      success: true,
-      message: 'Product updated successfully',
-      data: updateData
-    });
+    const updatedProduct = (await db.collection('products').doc(id).get()).data();
+    res.status(200).json({ success: true, message: 'Product updated successfully', data: updatedProduct });
   } catch (error) {
-    console.error('Update product error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error updating product'
-    });
+    res.status(500).json({ success: false, message: 'Error updating product' });
   }
 };
-
 // Delete product
 const deleteProduct = async (req, res) => {
   try {

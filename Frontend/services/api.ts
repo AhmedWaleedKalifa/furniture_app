@@ -501,3 +501,18 @@ export const getAdminTickets = async (token: string): Promise<SupportTicket[]> =
     if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update status');
 };
 
+export const updateProduct = async (token: string, productId: string, data: any) => {
+  const response = await fetch(`${BASE_URL}/api/products/${productId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(data),
+  });
+  const result = await response.json();
+  if (!response.ok || !result.success) {
+    throw new Error(result.message || 'Failed to update product');
+  }
+  return result.data;
+};
