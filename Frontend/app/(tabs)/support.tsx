@@ -11,7 +11,11 @@ import {
 } from "react-native";
 import React, { useState, useEffect } from "react";
 import useFetch from "../../services/useFetch";
-import { getMyTickets, createTicket, getAdminTickets } from "../../services/api";
+import {
+  getMyTickets,
+  createTicket,
+  getAdminTickets,
+} from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import StatusPicker from "../../components/admin/StatusPicker";
 import { Link } from "expo-router";
@@ -39,11 +43,19 @@ const TICKET_PRIORITIES = [
 
 const SupportScreen = () => {
   const { user, token } = useAuth();
-  
-  // Conditionally choose the fetch function based on user role
-  const fetchFunction = user?.role === 'admin' ? () => getAdminTickets(token!) : () => getMyTickets(token!);
 
-  const { data: tickets, loading, error, refetch } = useFetch(fetchFunction, !!token);
+  // Conditionally choose the fetch function based on user role
+  const fetchFunction =
+    user?.role === "admin"
+      ? () => getAdminTickets(token!)
+      : () => getMyTickets(token!);
+
+  const {
+    data: tickets,
+    loading,
+    error,
+    refetch,
+  } = useFetch(fetchFunction, !!token);
 
   const [isModalVisible, setModalVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,11 +88,16 @@ const SupportScreen = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "open": return "bg-blue-500 text-white";
-      case "in_progress": return "bg-yellow-500 text-black";
-      case "resolved": return "bg-green-500 text-white";
-      case "closed": return "bg-gray-500 text-white";
-      default: return "bg-gray-300 text-black";
+      case "open":
+        return "bg-blue-500 text-white";
+      case "in_progress":
+        return "bg-yellow-500 text-black";
+      case "resolved":
+        return "bg-green-500 text-white";
+      case "closed":
+        return "bg-gray-500 text-white";
+      default:
+        return "bg-gray-300 text-black";
     }
   };
 
@@ -97,25 +114,43 @@ const SupportScreen = () => {
       </TouchableOpacity>
 
       {loading && <ActivityIndicator size="large" />}
-      {error && <Text className="text-red-500 text-center py-4">{error.message}</Text>}
+      {error && (
+        <Text className="text-red-500 text-center py-4">{error.message}</Text>
+      )}
 
       <FlatList
         data={tickets}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => ( 
+        renderItem={({ item }) => (
           <Link href={`/ticket/${item.id}`} asChild>
             <TouchableOpacity className="bg-w-100 p-4 rounded-lg mb-4 shadow-md">
               <View className="flex-row justify-between items-center">
-                <Text className="font-bold text-lg text-bl flex-1 pr-2" numberOfLines={1}>{item.subject}</Text>
-                <Text className={`font-bold px-3 py-1 rounded-full text-xs capitalize ${getStatusColor(item.status)}`}>
-                  {item.status.replace('_', ' ')}
+                <Text
+                  className="font-bold text-lg text-bl flex-1 pr-2"
+                  numberOfLines={1}
+                >
+                  {item.subject}
+                </Text>
+                <Text
+                  className={`font-bold px-3 py-1 rounded-full text-xs capitalize ${getStatusColor(
+                    item.status
+                  )}`}
+                >
+                  {item.status.replace("_", " ")}
                 </Text>
               </View>
-              {user?.role === 'admin' && (
-                <Text className="text-gray-500 mt-1">From: {item.userName}</Text>
+              {user?.role === "admin" && (
+                <Text className="text-gray-500 mt-1">
+                  From: {item.userName || "N/A"}
+                </Text>
               )}
-              <Text className="text-g-300 mt-2" numberOfLines={2}>{item.description}</Text>
-              <Text className="text-g-300 mt-2 text-xs">Created: {new Date(item.createdAt).toLocaleDateString()}</Text>
+              <Text className="text-g-300 mt-2" numberOfLines={2}>
+                {item.description}
+              </Text>
+              <Text className="text-g-300 mt-2 text-xs">Created: {item.createdAt && typeof item.createdAt === 'object' && item.createdAt._seconds
+                  ? new Date(item.createdAt._seconds * 1000).toLocaleDateString()
+                  : item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'}
+              </Text>
             </TouchableOpacity>
           </Link>
         )}
@@ -124,7 +159,9 @@ const SupportScreen = () => {
           // This satisfies TypeScript's type requirements for the prop.
           !loading ? (
             <View className="flex-1 justify-center items-center mt-20">
-                <Text className="text-center text-g-300 text-base">You have no support tickets.</Text>
+              <Text className="text-center text-g-300 text-base">
+                You have no support tickets.
+              </Text>
             </View>
           ) : null
         }
@@ -137,7 +174,10 @@ const SupportScreen = () => {
         visible={isModalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <ScrollView className="flex-1 bg-w-200 p-5 pt-16" contentContainerStyle={{ paddingBottom: 40 }}>
+        <ScrollView
+          className="flex-1 bg-w-200 p-5 pt-16"
+          contentContainerStyle={{ paddingBottom: 40 }}
+        >
           <Text className="text-2xl font-bold text-bl mb-6">
             New Support Ticket
           </Text>

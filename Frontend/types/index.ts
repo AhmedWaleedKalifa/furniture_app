@@ -5,8 +5,7 @@ export interface User {
   email: string;
   displayName: string;
   role: 'client' | 'company' | 'admin';
-  createdAt?: string; // This is optional, which is correct
-  isVerified?: boolean;
+  createdAt?: FirestoreTimestamp | string;  isVerified?: boolean;
   avatar?: string;
   phone?: string;
 }
@@ -23,7 +22,8 @@ export interface Product {
   company?: {
     displayName: string;
   };
-  createdAt: string;
+  createdAt: FirestoreTimestamp | string;
+  tags?:string[];
 }
 
 export interface ProductDetails extends Product {
@@ -59,8 +59,7 @@ export interface Order {
   totalPrice: number;
   orderStatus: 'processing' | 'shipped' | 'delivered' | 'cancelled';
   paymentStatus: 'pending' | 'paid' | 'failed';
-  createdAt: string;
-  orderNumber?: string;
+  createdAt: FirestoreTimestamp | string;  orderNumber?: string;
 }
 
 
@@ -94,8 +93,7 @@ export interface AdminStats {
 
 export interface WishlistItem {
   productId: string;
-  addedAt: string;
-  productName: string;
+  addedAt: FirestoreTimestamp | string;  productName: string;
   price: number;
   productImage: string;
 }
@@ -106,8 +104,7 @@ export interface TicketMessage {
     senderName: string;
     senderType: 'user' | 'agent' | 'system';
     message: string;
-    timestamp: string; // The backend sends this as a string, which we convert to Date
-  }
+    timestamp: FirestoreTimestamp | string;  }
   export interface SupportTicket {
     id: string;
    userId: string;
@@ -120,5 +117,5 @@ export interface TicketMessage {
     priority: 'low' | 'medium' | 'high';
     category: string;
    messages: TicketMessage[]; // The array of all replies
-   createdAt: string; 
-  }
+   createdAt: FirestoreTimestamp | string;   }
+  export type FirestoreTimestamp = { _seconds: number; _nanoseconds: number; };

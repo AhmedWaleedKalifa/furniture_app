@@ -1,38 +1,57 @@
-const { getFirestore } = require('../config/firebase');
 
-// Create new product
+const { getFirestore, admin } = require('../config/firebase');
+const { v4: uuidv4 } = require('uuid');
+const cloudinary = require('../config/cloudinary'); // Adjust path as needed
+
 const createProduct = async (req, res) => {
   try {
     const db = getFirestore();
+    let imageUrl = '';
+
+    if (req.file) {
+      // Upload buffer to Cloudinary
+      const result = await cloudinary.uploader.upload_stream(
+        { resource_type: 'image' },
+        (error, result) => {
+          if (error) throw error;
+          imageUrl = result.secure_url;
+        }
+      );
+      // Pipe the buffer to the upload stream
+      result.end(req.file.buffer);
+    }
+
     const productData = {
       ...req.body,
       companyId: req.user.uid,
-      isApproved: false, // Requires admin approval
+      isApproved: false,
       createdAt: new Date(),
       updatedAt: new Date(),
       views: 0,
       placements: 0,
-      wishlistCount: 0
+      wishlistCount: 0,
+      thumbnail: imageUrl,
     };
 
     const productRef = await db.collection('products').add(productData);
-    
+
     res.status(201).json({
       success: true,
       message: 'Product created successfully',
       data: {
         id: productRef.id,
-        ...productData
-      }
+        ...productData,
+      },
     });
   } catch (error) {
     console.error('Create product error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error creating product'
+      message: 'Error creating product',
     });
   }
 };
+
 
 // Get all products with filtering
 const getProducts = async (req, res) => {

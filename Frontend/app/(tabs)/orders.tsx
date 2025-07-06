@@ -99,8 +99,10 @@ const OrdersScreen = () => {
             </Text>
 
             <Text className="text-g-200 mb-3">
-              Date: {new Date(item.createdAt).toLocaleDateString()}
-            </Text>
+            Date: {item.createdAt && typeof item.createdAt === 'object' && item.createdAt._seconds
+                ? new Date(item.createdAt._seconds * 1000).toLocaleDateString()
+                : item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'
+              }            </Text>
 
             <View className="mb-3">
               <Text className="text-bl font-medium mb-2">Items:</Text>

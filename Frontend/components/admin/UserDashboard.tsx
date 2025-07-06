@@ -102,8 +102,10 @@ const UsersDashboard: React.FC<UsersDashboardProps> = ({ token }) => {
         </View>
         <Text style={styles.userEmail}>{item.email}</Text>
         <Text style={styles.userDate}>
-          Joined: {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'}
-        </Text>
+        Joined: {item.createdAt && typeof item.createdAt === 'object' && item.createdAt._seconds
+            ? new Date(item.createdAt._seconds * 1000).toLocaleDateString()
+            : item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'
+          }        </Text>
         {item.isVerified && (
           <Text style={styles.verifiedText}>✅ Verified</Text>
         )}

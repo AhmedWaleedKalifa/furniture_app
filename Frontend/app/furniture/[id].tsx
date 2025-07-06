@@ -5,11 +5,12 @@ import {
   View,
   Image,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
+  Alert,
   Modal,
   TextInput,
-  Button,
+  KeyboardAvoidingView,
+  Platform,
   StyleSheet,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
@@ -19,6 +20,7 @@ import {
   approveProduct,
   rejectProduct,
   updateProduct,
+  deleteProduct,
 } from "@/services/api";
 import useFetch from "@/services/useFetch";
 import { useAuth } from "@/context/AuthContext";
@@ -27,7 +29,10 @@ import { ProductDetails } from "@/types/index";
 const FurnitureDetails = () => {
   const { id } = useLocalSearchParams();
   const productId = Array.isArray(id) ? id[0] : id;
+
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [rejectModalVisible, setRejectModalVisible] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   const { data: furniture, loading, refetch } = useFetch<ProductDetails>(
     () => fetchFurnitureDetails(productId!),
@@ -38,23 +43,33 @@ const FurnitureDetails = () => {
   const [isActionLoading, setIsActionLoading] = useState(false);
 
   // Edit form state
-  const [form, setForm] = useState({
+  const [formState, setFormState] = useState({
     name: "",
     description: "",
     price: "",
     category: "",
     thumbnailUrl: "",
+    modelUrl: "",
+    dimensions: { width: "", height: "", depth: "" },
+    tags: "",
   });
   const [formLoading, setFormLoading] = useState(false);
 
   React.useEffect(() => {
     if (editModalVisible && furniture) {
-      setForm({
+      setFormState({
         name: furniture.name || "",
         description: furniture.description || "",
         price: String(furniture.price ?? ""),
         category: furniture.category || "",
         thumbnailUrl: furniture.thumbnailUrl || "",
+        modelUrl: furniture.modelUrl || "",
+        dimensions: {
+          width: String(furniture.dimensions?.width ?? ""),
+          height: String(furniture.dimensions?.height ?? ""),
+          depth: String(furniture.dimensions?.depth ?? ""),
+        },
+        tags: (furniture.tags || []).join(", "),
       });
     }
   }, [editModalVisible, furniture]);
@@ -72,7 +87,6 @@ const FurnitureDetails = () => {
     }
   };
 
-  // --- ORDER CREATION LOGIC MATCHING YOUR SCHEMA ---
   const handleOrderProduct = async () => {
     if (!user) {
       router.push("/login");
@@ -93,7 +107,6 @@ const FurnitureDetails = () => {
             if (!token || !furniture) return;
             setIsOrdering(true);
             try {
-              // Build the order item as required by your schema
               const orderItem = {
                 productId: furniture.id,
                 productName: furniture.name,
@@ -105,7 +118,6 @@ const FurnitureDetails = () => {
                 items: [orderItem],
                 totalAmount,
                 totalPrice: totalAmount,
-                // orderStatus, paymentStatus, createdAt, orderNumber are set by backend
               };
               await createOrder(token, orderData);
               triggerGlobalRefresh();
@@ -137,44 +149,84 @@ const FurnitureDetails = () => {
     }
   };
 
-  const handleReject = () => {
+  const handleRejectSubmit = async () => {
+    if (!token || !furniture || !rejectionReason.trim()) {
+      Alert.alert('Error', 'Please provide a reason for rejection.');
+      return;
+    }
+    setIsActionLoading(true);
+    try {
+      await rejectProduct(token, furniture.id, rejectionReason);
+      Alert.alert("Success", "Product has been rejected.");
+      triggerGlobalRefresh();
+      setRejectModalVisible(false);
+      setRejectionReason('');
+      router.back();
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to reject product.");
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+  
+  const handleDelete = () => {
     if (!token || !furniture) return;
-    Alert.prompt(
-      "Reject Product",
-      "Please provide a reason for rejection.",
-      async (reason) => {
-        if (reason) {
-          setIsActionLoading(true);
-          try {
-            await rejectProduct(token, furniture.id, reason);
-            Alert.alert("Success", "Product has been rejected.");
-            triggerGlobalRefresh();
-            router.back();
-          } catch (error: any) {
-            Alert.alert("Error", error.message || "Failed to reject product.");
-          } finally {
-            setIsActionLoading(false);
-          }
-        }
-      }
+    Alert.alert(
+      "Delete Product",
+      `Are you sure you want to permanently delete "${furniture.name}"? This action cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setIsActionLoading(true);
+            try {
+              await deleteProduct(token, furniture.id);
+              Alert.alert("Success", "Product has been deleted.");
+              triggerGlobalRefresh();
+              router.back();
+            } catch (error: any) {
+              Alert.alert("Error", error.message || "Failed to delete product.");
+            } finally {
+              setIsActionLoading(false);
+            }
+          },
+        },
+      ]
     );
   };
 
-  const handleEditFormChange = (field: string, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+  const handleFormChange = (field: keyof typeof formState, value: string) => {
+    setFormState(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleDimensionChange = (field: 'width' | 'height' | 'depth', value: string) => {
+    setFormState(prev => ({
+      ...prev,
+      dimensions: { ...prev.dimensions, [field]: value }
+    }));
   };
 
   const handleEditFormSubmit = async () => {
     setFormLoading(true);
     try {
-      if (!token || !furniture?.id) {
-        Alert.alert("Error", "Missing authentication or product information.");
-        return;
-      }
-      await updateProduct(token, furniture.id, {
-        ...form,
-        price: parseFloat(form.price),
-      });
+      if (!token || !furniture?.id) throw new Error("Authentication error. Please log in again.");
+
+      const updatedData = {
+        ...formState,
+        price: parseFloat(formState.price) || 0,
+        dimensions: {
+          width: parseFloat(formState.dimensions.width) || 0,
+          height: parseFloat(formState.dimensions.height) || 0,
+          depth: parseFloat(formState.dimensions.depth) || 0,
+          unit: furniture.dimensions?.unit || 'cm',
+        },
+        tags: formState.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+      };
+
+      await updateProduct(token, furniture.id, updatedData);
+      
       Alert.alert("Success", "Product updated successfully!");
       setEditModalVisible(false);
       refetch();
@@ -186,12 +238,12 @@ const FurnitureDetails = () => {
   };
 
   const renderRoleSpecificActions = () => {
-    if (!user || !furniture) return null;
+    if (!user || !furniture) return <View />;
     switch (user.role) {
       case "client":
         const isWishlisted = (wishlist || []).some((item) => item.productId === furniture.id);
         return (
-          <>
+          <View>
             <TouchableOpacity
               onPress={() => {
                 Alert.alert("At room");
@@ -229,17 +281,17 @@ const FurnitureDetails = () => {
                 )}
               </TouchableOpacity>
             </View>
-          </>
+          </View>
         );
       case "company":
         if (user.uid === furniture.companyId) {
           return (
             <View style={styles.companyAction}>
               <TouchableOpacity
-                style={styles.editButton}
+                className="bg-accent p-4 rounded-lg items-center"
                 onPress={() => setEditModalVisible(true)}
               >
-                <Text style={styles.editButtonText}>Edit Product</Text>
+                <Text className="text-white font-bold text-base">Edit Product Details</Text>
               </TouchableOpacity>
               <Modal
                 visible={editModalVisible}
@@ -247,81 +299,110 @@ const FurnitureDetails = () => {
                 onRequestClose={() => setEditModalVisible(false)}
                 transparent={false}
               >
-                <ScrollView contentContainerStyle={styles.modalContent}>
-                  <Text style={styles.modalTitle}>Edit Product</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={form.name}
-                    onChangeText={(v) => handleEditFormChange("name", v)}
-                    placeholder="Name"
-                  />
-                  <TextInput
-                    style={styles.input}
-                    value={form.description}
-                    onChangeText={(v) => handleEditFormChange("description", v)}
-                    placeholder="Description"
-                  />
-                  <TextInput
-                    style={styles.input}
-                    value={form.price}
-                    onChangeText={(v) => handleEditFormChange("price", v)}
-                    placeholder="Price"
-                    keyboardType="numeric"
-                  />
-                  <TextInput
-                    style={styles.input}
-                    value={form.category}
-                    onChangeText={(v) => handleEditFormChange("category", v)}
-                    placeholder="Category"
-                  />
-                  <TextInput
-                    style={styles.input}
-                    value={form.thumbnailUrl}
-                    onChangeText={(v) => handleEditFormChange("thumbnailUrl", v)}
-                    placeholder="Image URL"
-                  />
-                  <Button title="Save Changes" onPress={handleEditFormSubmit} disabled={formLoading} />
-                  <Button title="Cancel" color="red" onPress={() => setEditModalVisible(false)} />
-                </ScrollView>
+                <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
+                  <ScrollView className="flex-1 bg-w-200 p-5 pt-16" contentContainerStyle={{ paddingBottom: 40 }}>
+                    <Text className="text-2xl font-bold text-bl mb-6">Edit Product</Text>
+                    <Text className="text-bl font-semibold mb-2 mt-2">Name</Text>
+                    <TextInput placeholder="Product Name" value={formState.name} onChangeText={t => handleFormChange('name', t)} className="bg-g-100 p-3 rounded-lg mb-3" />
+                    <Text className="text-bl font-semibold mb-2 mt-2">Description</Text>
+                    <TextInput placeholder="Description" value={formState.description} onChangeText={t => handleFormChange('description', t)} className="bg-g-100 p-3 rounded-lg mb-3 h-24" multiline />
+                    <Text className="text-bl font-semibold mb-2 mt-2">Price</Text>
+                    <TextInput placeholder="Price" value={formState.price} onChangeText={t => handleFormChange('price', t)} className="bg-g-100 p-3 rounded-lg mb-3" keyboardType="numeric" />
+                    <Text className="text-bl font-semibold mb-2 mt-2">Category</Text>
+                    <TextInput placeholder="Category" value={formState.category} onChangeText={t => handleFormChange('category', t)} className="bg-g-100 p-3 rounded-lg mb-3" />
+                    <Text className="text-bl font-semibold mb-2 mt-2">Thumbnail URL</Text>
+                    <TextInput placeholder="Thumbnail URL" value={formState.thumbnailUrl} onChangeText={t => handleFormChange('thumbnailUrl', t)} className="bg-g-100 p-3 rounded-lg mb-3" />
+                    <Text className="text-bl font-semibold mb-2 mt-2">3D Model URL</Text>
+                    <TextInput placeholder="3D Model URL" value={formState.modelUrl} onChangeText={t => handleFormChange('modelUrl', t)} className="bg-g-100 p-3 rounded-lg mb-3" />
+                    <Text className="text-bl font-semibold mb-2 mt-2">Tags (comma-separated)</Text>
+                    <TextInput placeholder="e.g. modern, leather, cozy" value={formState.tags} onChangeText={t => handleFormChange('tags', t)} className="bg-g-100 p-3 rounded-lg mb-3" />
+                    <Text className="text-bl font-semibold mt-4 mb-2">Dimensions ({furniture.dimensions?.unit || 'cm'})</Text>
+                    <View className="flex-row gap-x-2">
+                      <TextInput placeholder="Width" value={formState.dimensions.width} onChangeText={t => handleDimensionChange('width', t)} className="bg-g-100 p-3 rounded-lg mb-3 flex-1" keyboardType="numeric" />
+                      <TextInput placeholder="Height" value={formState.dimensions.height} onChangeText={t => handleDimensionChange('height', t)} className="bg-g-100 p-3 rounded-lg mb-3 flex-1" keyboardType="numeric" />
+                      <TextInput placeholder="Depth" value={formState.dimensions.depth} onChangeText={t => handleDimensionChange('depth', t)} className="bg-g-100 p-3 rounded-lg mb-3 flex-1" keyboardType="numeric" />
+                    </View>
+                    <TouchableOpacity onPress={handleEditFormSubmit} className="bg-br p-4 rounded-lg mt-4" disabled={formLoading}>
+                      {formLoading ? <ActivityIndicator color="#fff" /> : <Text className="text-w-100 text-center font-bold">Save Changes</Text>}
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setEditModalVisible(false)} className="bg-g-200 p-4 rounded-lg mt-2">
+                      <Text className="text-bl text-center font-bold">Cancel</Text>
+                    </TouchableOpacity>
+                  </ScrollView>
+                </KeyboardAvoidingView>
               </Modal>
             </View>
           );
         }
-        return null;
+        return <View />;
       case "admin":
-        if (!furniture.isApproved) {
-          return (
-            <View style={styles.actionRow}>
-              <TouchableOpacity
-                onPress={handleApprove}
-                disabled={isActionLoading}
-                style={[styles.actionButton, { backgroundColor: "#22c55e" }]}
-              >
-                {isActionLoading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
+        return (
+          <View>
+            {!furniture.isApproved && (
+              <View style={styles.actionRow}>
+                <TouchableOpacity
+                  onPress={handleApprove}
+                  disabled={isActionLoading}
+                  style={[styles.actionButton, { backgroundColor: "#22c55e" }]}
+                >
                   <Text style={styles.actionButtonText}>Approve</Text>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleReject}
-                disabled={isActionLoading}
-                style={[styles.actionButton, { backgroundColor: "#ef4444" }]}
-              >
-                {isActionLoading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
+                </TouchableOpacity>
+                 <TouchableOpacity
+                  onPress={() => setRejectModalVisible(true)}
+                  disabled={isActionLoading}
+                  style={[styles.actionButton, { backgroundColor: "#f59e42" }]}
+                >
                   <Text style={styles.actionButtonText}>Reject</Text>
-                )}
+                </TouchableOpacity>
+              </View>
+            )}
+            <View style={{ paddingHorizontal: 24, marginTop: 16 }}>
+              <TouchableOpacity
+                onPress={handleDelete}
+                disabled={isActionLoading}
+                className="bg-red-600 p-4 rounded-lg items-center"
+              >
+                {isActionLoading ? <ActivityIndicator color="#fff" /> : 
+                  <Text className="text-white font-bold text-base">
+                    Delete Product Permanently
+                  </Text>
+                }
               </TouchableOpacity>
             </View>
-          );
-        }
-        return null;
+          </View>
+        );
       default:
-        return null;
+        return <View />;
     }
   };
+
+  const renderRejectModal = () => (
+    <Modal
+      visible={rejectModalVisible}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setRejectModalVisible(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Reject Product</Text>
+          <Text style={styles.modalSubtitle}>{furniture?.name}</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Reason for rejection..."
+            value={rejectionReason}
+            onChangeText={setRejectionReason}
+            multiline
+            numberOfLines={4}
+          />
+          <TouchableOpacity style={styles.confirmRejectButton} onPress={handleRejectSubmit} disabled={isActionLoading || !rejectionReason.trim()}>
+            <Text style={styles.actionButtonText}>{isActionLoading ? <ActivityIndicator color="#fff" /> : "Confirm Reject"}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.cancelButton} onPress={() => setRejectModalVisible(false)}><Text>Cancel</Text></TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
 
   if (loading) {
     return (
@@ -391,6 +472,7 @@ const FurnitureDetails = () => {
       >
         <Text style={styles.goBackText}>Go Back</Text>
       </TouchableOpacity>
+      {renderRejectModal()}
     </ScrollView>
   );
 };
@@ -409,21 +491,23 @@ const styles = StyleSheet.create({
   categoryText: { color: "#64748b" },
   dimensionsBox: { marginBottom: 24 },
   dimensionsRow: { flexDirection: "row", justifyContent: "space-between" },
-  seeInRoomButton: { margin: 20, backgroundColor: "#f59e42", padding: 16, borderRadius: 8, alignItems: "center" },
-  actionRow: { flexDirection: "row", gap: 12, paddingHorizontal: 24, marginTop: 24 },
+  seeInRoomButton: { marginHorizontal: 24, marginVertical: 12, backgroundColor: "#f59e42", padding: 16, borderRadius: 8, alignItems: "center" },
+  actionRow: { flexDirection: "row", gap: 12, paddingHorizontal: 24, marginTop: 12 },
   actionButton: { flex: 1, paddingVertical: 16, borderRadius: 8, alignItems: "center", marginHorizontal: 4 },
   actionButtonText: { color: "#fff", fontWeight: "bold" },
-  companyAction: { paddingHorizontal: 24, marginTop: 24 },
-  editButton: { backgroundColor: "#007bff", padding: 12, borderRadius: 8, alignItems: "center", marginTop: 16 },
-  editButtonText: { color: "#fff", fontWeight: "bold" },
+  companyAction: { paddingHorizontal: 24, marginTop: 16, marginBottom: 12 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
   notFoundText: { fontSize: 18, color: "#64748b" },
   goBackButton: { marginTop: 24, backgroundColor: "#f3f4f6", padding: 12, borderRadius: 8, alignItems: "center" },
   goBackButtonBottom: { marginHorizontal: 24, marginBottom: 24, backgroundColor: "#f3f4f6", padding: 16, borderRadius: 8, alignItems: "center" },
   goBackText: { color: "#1e293b", fontWeight: "bold" },
-  modalContent: { flex: 1, justifyContent: "center", padding: 24, backgroundColor: "#f9f9f9" },
-  modalTitle: { fontSize: 20, fontWeight: "bold", marginBottom: 16 },
-  input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 6, padding: 8, marginBottom: 12, backgroundColor: "#fff" },
+  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
+  modalContent: { width: '90%', backgroundColor: 'white', padding: 24, borderRadius: 12 },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 8, textAlign: 'center' },
+  modalSubtitle: { fontSize: 16, color: '#64748b', marginBottom: 16, textAlign: 'center' },
+  input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 6, padding: 12, marginBottom: 16, backgroundColor: "#fff", textAlignVertical: 'top' },
+  confirmRejectButton: { backgroundColor: '#ef4444', padding: 16, borderRadius: 8, alignItems: 'center', marginBottom: 8 },
+  cancelButton: { backgroundColor: '#e5e7eb', padding: 16, borderRadius: 8, alignItems: 'center' },
 });
 
 export default FurnitureDetails;

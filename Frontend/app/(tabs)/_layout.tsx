@@ -78,7 +78,7 @@ export default function TabLayout() {
         name="search"
         options={{
           title: 'Search',
-          href: user.role === 'client' ? '/search' : null,
+          href:  '/search',
           tabBarIcon: ({ focused, color, size }) => (
             <TabIcon focused={focused} name={getIconName('search', focused)} color={color} size={size} />
           ),

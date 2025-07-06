@@ -39,7 +39,7 @@ const allowedOrigins = [
   'http://localhost:8081',
   'http://localhost:3001',
   'exp://localhost:8081',
-  'http://192.168.1.13:8081',
+  'http://http://192.168.1.13:8081',
   '*' // For development - remove in production
 ];
 

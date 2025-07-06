@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -10,17 +10,22 @@ import {
   Image,
   Modal,
   TextInput,
-} from 'react-native';
-import useFetch from '@/services/useFetch';
-import { getPendingProducts, approveProduct, rejectProduct, deleteProduct } from '@/services/api';
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+} from "react-native";
+import useFetch from "@/services/useFetch";
+import {
+  getPendingProducts,
+  approveProduct,
+  rejectProduct,
+  deleteProduct,
+} from "@/services/api";
+import { useAuth } from "@/context/AuthContext"; // Import useAuth
 
 interface ProductsDashboardProps {
   token: string;
 }
 
 interface Product {
-  id: string; 
+  id: string;
   name: string;
   description: string;
   price: number;
@@ -36,46 +41,48 @@ const ProductsDashboard: React.FC<ProductsDashboardProps> = ({ token }) => {
   // FIX: Get the global refresh trigger from the auth context
   const { triggerGlobalRefresh } = useAuth();
   const [showRejectModal, setShowRejectModal] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [rejectReason, setRejectReason] = useState('');
+  const [isRejectModalVisible, setRejectModalVisible] = useState(false);
+  const [productToReject, setProductToReject] = useState<Product | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const { data: products, loading: fetchLoading, error, refetch } = useFetch(
-    () => getPendingProducts(token),
-    !!token
-  );
+  const {
+    data: products,
+    loading: fetchLoading,
+    error,
+    refetch,
+  } = useFetch(() => getPendingProducts(token), !!token);
 
   const handleApprove = async (productId: string) => {
     try {
       setLoading(true);
       await approveProduct(token, productId);
-      Alert.alert('Success', 'Product approved successfully');
+      Alert.alert("Success", "Product approved successfully");
       refetch(); // Refreshes this component's list
       triggerGlobalRefresh(); // FIX: Notifies the rest of the app to refresh
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      Alert.alert("Error", error.message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleReject = async () => {
-    if (!selectedProduct || !rejectReason.trim()) {
-      Alert.alert('Error', 'Please provide a reason for rejection');
+    if (!productToReject || !rejectionReason.trim()) {
+      Alert.alert("Error", "Please provide a reason for rejection");
       return;
     }
 
     try {
       setLoading(true);
-      await rejectProduct(token, selectedProduct.id, rejectReason);
-      Alert.alert('Success', 'Product rejected successfully');
-      setShowRejectModal(false);
-      setRejectReason('');
-      setSelectedProduct(null);
+      await rejectProduct(token, productToReject.id, rejectionReason);
+      Alert.alert("Success", "Product rejected successfully");
       refetch();
+      setRejectModalVisible(false);
+      setRejectionReason("");
       triggerGlobalRefresh(); // FIX: Notifies the rest of the app to refresh
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      Alert.alert("Error", error.message);
     } finally {
       setLoading(false);
     }
@@ -83,22 +90,22 @@ const ProductsDashboard: React.FC<ProductsDashboardProps> = ({ token }) => {
 
   const handleDelete = (product: Product) => {
     Alert.alert(
-      'Delete Product',
+      "Delete Product",
       `Are you sure you want to delete "${product.name}"? This action cannot be undone.`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Delete',
-          style: 'destructive',
+          text: "Delete",
+          style: "destructive",
           onPress: async () => {
             try {
               setLoading(true);
               await deleteProduct(token, product.id);
-              Alert.alert('Success', 'Product deleted successfully');
+              Alert.alert("Success", "Product deleted successfully");
               refetch();
               triggerGlobalRefresh(); // FIX: Notifies the rest of the app to refresh
             } catch (error: any) {
-              Alert.alert('Error', error.message);
+              Alert.alert("Error", error.message);
             } finally {
               setLoading(false);
             }
@@ -109,18 +116,19 @@ const ProductsDashboard: React.FC<ProductsDashboardProps> = ({ token }) => {
   };
 
   const openRejectModal = (product: Product) => {
-    setSelectedProduct(product);
-    setShowRejectModal(true);
+    setProductToReject(product);
+    setRejectionReason('');
+    setRejectModalVisible(true);
   };
 
   const renderProduct = ({ item }: { item: Product }) => (
     <View style={styles.productCard}>
-      <Image 
-        source={{ uri: item.thumbnailUrl }} 
+      <Image
+        source={{ uri: item.thumbnailUrl }}
         style={styles.productImage}
-        defaultSource={require('@/assets/images/placeholder.png')}
+        defaultSource={require("@/assets/images/placeholder.png")}
       />
-      
+
       <View style={styles.productInfo}>
         <Text style={styles.productName}>{item.name}</Text>
         <Text style={styles.productDescription} numberOfLines={2}>
@@ -128,10 +136,17 @@ const ProductsDashboard: React.FC<ProductsDashboardProps> = ({ token }) => {
         </Text>
         <Text style={styles.productPrice}>${item.price.toFixed(2)}</Text>
         <Text style={styles.productCompany}>
-          By: {item.company?.displayName || 'Unknown Company'}
+          By: {item.company?.displayName || "Unknown Company"}
         </Text>
         <Text style={styles.productDate}>
-          Created: {new Date(item.createdAt).toLocaleDateString()}
+          Created:{" "}
+          {item.createdAt &&
+          typeof item.createdAt === "object" &&
+          item.createdAt._seconds
+            ? new Date(item.createdAt._seconds * 1000).toLocaleDateString()
+            : item.createdAt
+            ? new Date(item.createdAt).toLocaleDateString()
+            : "N/A"}
         </Text>
       </View>
 
@@ -141,15 +156,21 @@ const ProductsDashboard: React.FC<ProductsDashboardProps> = ({ token }) => {
           onPress={() => handleApprove(item.id)}
           disabled={loading}
         >
-          <Text style={styles.actionButtonText}>✅ Approve</Text>
+          <Text style={styles.actionButtonText}>Approve</Text>
         </TouchableOpacity>
-        
+        <TouchableOpacity
+          style={[styles.actionButton, styles.rejectButton]}
+          onPress={() => openRejectModal(item)}
+          disabled={loading}
+        >
+          <Text style={styles.actionButtonText}>Reject</Text>
+        </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionButton, styles.deleteButton]}
           onPress={() => handleDelete(item)}
           disabled={loading}
         >
-          <Text style={styles.actionButtonText}>🗑️ Delete</Text>
+          <Text style={styles.actionButtonText}>Delete</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -198,23 +219,18 @@ const ProductsDashboard: React.FC<ProductsDashboardProps> = ({ token }) => {
       />
 
       {/* Reject Modal */}
-      <Modal
-        visible={showRejectModal}
-        transparent
-        animationType="slide"
-      >
+      <Modal visible={isRejectModalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Reject Product</Text>
             <Text style={styles.modalSubtitle}>
-              {selectedProduct?.name}
-            </Text>
-            
+              {productToReject?.name || ''}
+             </Text>
             <TextInput
               style={styles.textInput}
               placeholder="Reason for rejection..."
-              value={rejectReason}
-              onChangeText={setRejectReason}
+              value={rejectionReason}
+              onChangeText={setRejectionReason}
               multiline
               numberOfLines={4}
               textAlignVertical="top"
@@ -224,18 +240,22 @@ const ProductsDashboard: React.FC<ProductsDashboardProps> = ({ token }) => {
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => {
-                  setShowRejectModal(false);
-                  setRejectReason('');
-                  setSelectedProduct(null);
+                  setRejectModalVisible(false);
+                  setRejectionReason("");
+                  setProductToReject(null);
                 }}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
-                style={[styles.modalButton, styles.confirmButton]}
+                style={[
+                  styles.modalButton,
+                  styles.rejectConfirmButton,
+                  !rejectionReason.trim() && styles.disabledButton,
+                ]}
                 onPress={handleReject}
-                disabled={loading || !rejectReason.trim()}
+                disabled={loading || !rejectionReason.trim()}
               >
                 {loading ? (
                   <ActivityIndicator color="white" size="small" />
@@ -254,54 +274,54 @@ const ProductsDashboard: React.FC<ProductsDashboardProps> = ({ token }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: "#f8f9fa",
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
+    color: "#666",
   },
   errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
   errorText: {
     fontSize: 16,
-    color: '#dc3545',
-    textAlign: 'center',
+    color: "#dc3545",
+    textAlign: "center",
     marginBottom: 16,
   },
   retryButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: "#007AFF",
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
   retryButtonText: {
-    color: 'white',
-    fontWeight: '600',
+    color: "white",
+    fontWeight: "600",
   },
   header: {
     padding: 20,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
+    borderBottomColor: "#e9ecef",
   },
   headerTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#212529',
+    fontWeight: "bold",
+    color: "#212529",
   },
   headerSubtitle: {
     fontSize: 16,
-    color: '#6c757d',
+    color: "#6c757d",
     marginTop: 4,
   },
   listContainer: {
@@ -309,20 +329,20 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingVertical: 50,
   },
   emptyText: {
     fontSize: 16,
-    color: '#6c757d',
+    color: "#6c757d",
   },
   productCard: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -332,7 +352,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   productImage: {
-    width: '100%',
+    width: "100%",
     height: 200,
     borderRadius: 8,
     marginBottom: 12,
@@ -342,33 +362,33 @@ const styles = StyleSheet.create({
   },
   productName: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#212529',
+    fontWeight: "bold",
+    color: "#212529",
     marginBottom: 4,
   },
   productDescription: {
     fontSize: 14,
-    color: '#6c757d',
+    color: "#6c757d",
     marginBottom: 8,
   },
   productPrice: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#28a745',
+    fontWeight: "bold",
+    color: "#28a745",
     marginBottom: 4,
   },
   productCompany: {
     fontSize: 14,
-    color: '#007AFF',
+    color: "#007AFF",
     marginBottom: 4,
   },
   productDate: {
     fontSize: 12,
-    color: '#6c757d',
+    color: "#6c757d",
   },
   productActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   actionButton: {
     flex: 1,
@@ -378,56 +398,56 @@ const styles = StyleSheet.create({
     marginHorizontal: 2,
   },
   actionButtonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: '600',
+    color: "white",
+    textAlign: "center",
+    fontWeight: "600",
     fontSize: 12,
   },
   approveButton: {
-    backgroundColor: '#28a745',
+    backgroundColor: "#28a745",
   },
   rejectButton: {
-    backgroundColor: '#ffc107',
+    backgroundColor: "#fd7e14",
   },
   deleteButton: {
-    backgroundColor: '#dc3545',
+    backgroundColor: "#dc3545",
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 16,
     padding: 24,
-    width: '80%',
+    width: "80%",
     maxWidth: 400,
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontWeight: "bold",
+    textAlign: "center",
     marginBottom: 8,
   },
   modalSubtitle: {
     fontSize: 16,
-    color: '#6c757d',
-    textAlign: 'center',
+    color: "#6c757d",
+    textAlign: "center",
     marginBottom: 20,
   },
   textInput: {
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: "#e9ecef",
     borderRadius: 8,
     padding: 12,
     marginBottom: 20,
     height: 80,
   },
   modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   modalButton: {
     flex: 1,
@@ -436,20 +456,23 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   cancelButton: {
-    backgroundColor: '#6c757d',
+    backgroundColor: "#6c757d",
   },
   cancelButtonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: '600',
+    color: "white",
+    textAlign: "center",
+    fontWeight: "600",
   },
-  confirmButton: {
-    backgroundColor: '#dc3545',
+  rejectConfirmButton: {
+    backgroundColor: "#dc3545",
   },
   confirmButtonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: '600',
+    color: "white",
+    textAlign: "center",
+    fontWeight: "600",
+  },
+  disabledButton: {
+    backgroundColor: "#6c757d",
   },
 });
 

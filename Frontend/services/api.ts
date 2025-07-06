@@ -1,3 +1,5 @@
+// furniture_app (Copy)/Frontend/services/api.ts
+
 import { User, Product, ProductDetails, Order, SupportTicket, AdminStats, WishlistItem } from '../types/index';
 const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL;
 
@@ -12,18 +14,17 @@ export interface NewProductData {
   category: string;
   price: number;
   modelUrl: string;
-  thumbnailUrl: string;
   dimensions: {
     width: number;
     height: number;
     depth: number;
     unit: string;
   };
-  // FIX: Add the customizable object to the interface
   customizable: {
       color: boolean;
       material: boolean;
   };
+  tags?: string[];
 }
 export interface SignupData extends LoginData {
   displayName: string;
@@ -47,7 +48,6 @@ export interface CreateOrderData {
     productId: string;
     quantity: number;
   }>;
-  // Using a placeholder address for now as the UI doesn't collect this yet.
   shippingAddress: { 
     street: string;
     city: string;
@@ -56,6 +56,8 @@ export interface CreateOrderData {
   };
   paymentMethod: string;
 }
+
+
 // --- Auth Functions ---
 export const loginUser = async (credentials: LoginData): Promise<User & { token: string }> => {
   const response = await fetch(`${BASE_URL}/api/auth/login`, {
@@ -159,7 +161,6 @@ export const fetchFurnitureDetails = async (id:string): Promise<ProductDetails> 
 }
 
 
-// ... (existing auth and furniture functions)
 
 // Helper to create authenticated headers
 const getAuthHeaders = (token: string) => ({
@@ -296,17 +297,11 @@ export const approveProduct = async (token: string, productId: string): Promise<
 }
 
 
-// ... (at the top, with other interfaces)
 
-// Define the shape of data for creating a new product
-
-  
-  // ... (inside the file, after existing functions)
   
   // --- Company Functions ---
   
   export const getCompanyProducts = async (token: string): Promise<Product[]> => {
-      // The backend should automatically filter by the logged-in company's token
       const response = await fetch(`${BASE_URL}/api/products`, {
           headers: getAuthHeaders(token)
       });
@@ -314,20 +309,19 @@ export const approveProduct = async (token: string, productId: string): Promise<
       if (!response.ok || !data.success) throw new Error(data.message || "Failed to fetch company's products");
       return data.data;
   }
-  
-  export const createProduct = async (token: string, productData: NewProductData): Promise<void> => {
+  export const createProduct = async (token: string, productFormData: FormData): Promise<void> => {
       const response = await fetch(`${BASE_URL}/api/products`, {
           method: 'POST',
-          headers: getAuthHeaders(token),
-          body: JSON.stringify(productData)
+        // When sending FormData, do NOT set the Content-Type header manually.
+          // The browser/fetch API will set it with the correct boundary.
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: productFormData
       });
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.message || "Failed to create product");
   }
 
-  // Add to existing imports
   
-  // Add these functions
   export const deleteProduct = async (token: string, productId: string) => {
     const response = await fetch(`${BASE_URL}/api/admin/products/${productId}`, {
       method: 'DELETE',
@@ -480,7 +474,6 @@ export const getAdminTickets = async (token: string): Promise<SupportTicket[]> =
       return data.data;
   };
     
-    // FIX: Add function to post a reply to a ticket
     export const addTicketReply = async (token: string, ticketId: string, message: string): Promise<void> => {
       const response = await fetch(`${BASE_URL}/api/support/tickets/${ticketId}/reply`, {
           method: 'POST',
