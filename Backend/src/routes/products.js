@@ -24,7 +24,14 @@ router.post(
 );
 
 
-router.put('/:id', verifyToken, getUserProfile, requireCompanyOrAdmin, sanitizeInput, productValidation, productController.updateProduct);
+router.put(
+  '/:id',
+  verifyToken,
+  getUserProfile,
+  requireCompanyOrAdmin,
+  upload.single('thumbnail'),
+  productController.updateProduct
+);
 router.delete('/:id', verifyToken, getUserProfile, requireCompanyOrAdmin, productController.deleteProduct);
 
 // Engagement tracking

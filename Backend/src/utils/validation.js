@@ -61,39 +61,6 @@ const loginValidation = [
   validate
 ];
 
-// Product validation rules
-// const productValidation = [
-//   body('name')
-//     .trim()
-//     .isLength({ min: 2, max: 100 })
-//     .withMessage('Product name must be between 2 and 100 characters'),
-//   body('description')
-//     .optional()
-//     .trim()
-//     .isLength({ max: 1000 })
-//     .withMessage('Description must be less than 1000 characters'),
-//   body('category')
-//     .trim()
-//     .notEmpty()
-//     .withMessage('Category is required'),
-//   body('dimensions.width')
-//     .isFloat({ min: 0.1 })
-//     .withMessage('Width must be a positive number'),
-//   body('dimensions.height')
-//     .isFloat({ min: 0.1 })
-//     .withMessage('Height must be a positive number'),
-//   body('dimensions.depth')
-//     .isFloat({ min: 0.1 })
-//     .withMessage('Depth must be a positive number'),
-//   body('modelUrl')
-//     .isURL()
-//     .withMessage('Model URL must be a valid URL'),
-//   body('price')
-//     .optional()
-//     .isFloat({ min: 0 })
-//     .withMessage('Price must be a positive number'),
-//   validate
-// ];
 const productValidation = [
   body('name')
     .trim()

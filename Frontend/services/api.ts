@@ -386,10 +386,19 @@ export const createProduct = async (token: string, productFormData: FormData): P
   }
 }
 export const updateProduct = async (token: string, productId: string, data: any) => {
+  const isFormData = data instanceof FormData;
+
+  const headers = new Headers();
+  headers.append('Authorization', `Bearer ${token}`);
+  if (!isFormData) {
+    headers.append('Content-Type', 'application/json');
+  }
+  // For FormData, 'Content-Type': 'multipart/form-data' is set by the browser/client with the correct boundary.
+
   const response = await fetch(`${BASE_URL}/api/products/${productId}`, {
     method: 'PUT',
-    headers: getAuthHeaders(token),
-    body: JSON.stringify(data),
+    headers: headers,
+    body: isFormData ? data : JSON.stringify(data),
   });
   const result = await response.json();
   if (!response.ok || !result.success) {

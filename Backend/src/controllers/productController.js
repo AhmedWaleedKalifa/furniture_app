@@ -2,6 +2,9 @@
 const { getFirestore, admin } = require('../config/firebase');
 const { v4: uuidv4 } = require('uuid');
 const cloudinary = require('../config/cloudinary'); // Adjust path as needed
+const { firestore } = require('firebase-admin');
+const { deleteFromCloudinaryByUrl } = require('../utils/cloudinaryHelpers');
+
 const streamUpload = (buffer) => {
   return new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
@@ -207,23 +210,72 @@ const getProduct = async (req, res) => {
 
 // Update product
 const updateProduct = async (req, res) => {
+  const { id } = req.params;
+  const { uid, role } = req.user;
+  const db = getFirestore();
+  const productRef = db.collection('products').doc(id);
+
   try {
-    const { id } = req.params;
-    const db = getFirestore();
-    const productDoc = await db.collection('products').doc(id).get();
-    if (!productDoc.exists) {
+    // Fetch existing product
+    const doc = await productRef.get();
+    if (!doc.exists) {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
-    const product = productDoc.data();
-    if (product.companyId !== req.user.uid && req.userProfile.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Access denied. You can only update your own products.' });
+    const productData = doc.data();
+
+    // Authorization: Only owner company or admin
+    if (role !== 'admin' && productData.companyId !== uid) {
+      return res.status(403).json({ success: false, message: 'Forbidden: You do not own this product.' });
     }
-    const updateData = { ...req.body, updatedAt: new Date() };
-    await db.collection('products').doc(id).update(updateData);
-    const updatedProduct = (await db.collection('products').doc(id).get()).data();
-    res.status(200).json({ success: true, message: 'Product updated successfully', data: updatedProduct });
+
+    // Prepare updateData
+    const updateData = { ...req.body };
+
+    // If a new image is uploaded
+    if (req.file) {
+      // Delete old image if exists
+      if (productData.thumbnailUrl) {
+        try {
+          await deleteFromCloudinaryByUrl(productData.thumbnailUrl);
+        } catch (deleteError) {
+          console.error(`Failed to delete old image ${productData.thumbnailUrl}:`, deleteError);
+        }
+      }
+      // Upload new image and set thumbnailUrl
+      const uploadResult = await streamUpload(req.file.buffer);
+      updateData.thumbnailUrl = uploadResult.secure_url;
+    }
+
+    // Parse and validate fields
+    if (updateData.price) {
+      updateData.price = parseFloat(updateData.price);
+    }
+    if (updateData.dimensions && typeof updateData.dimensions === 'string') {
+      updateData.dimensions = JSON.parse(updateData.dimensions);
+    }
+    if (updateData.tags && typeof updateData.tags === 'string') {
+      updateData.tags = JSON.parse(updateData.tags);
+    }
+
+    // Remove undefined fields (Firestore does not accept undefined)
+    Object.keys(updateData).forEach(
+      (key) => updateData[key] === undefined && delete updateData[key]
+    );
+
+    // Always update the timestamp
+    updateData.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+
+    // Reset approval if not admin
+    if (role !== 'admin') {
+      updateData.isApproved = false;
+    }
+
+    await productRef.update(updateData);
+
+    res.status(200).json({ success: true, message: 'Product updated successfully' });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error updating product' });
+    console.error('Error updating product:', error);
+    res.status(500).json({ success: false, message: 'Server error updating product', error: error.message });
   }
 };
 // Delete product

@@ -25,6 +25,7 @@ import {
 import useFetch from "@/services/useFetch";
 import { useAuth } from "@/context/AuthContext";
 import { ProductDetails } from "@/types/index";
+import * as ImagePicker from "expo-image-picker";
 
 const FurnitureDetails = () => {
   const { id } = useLocalSearchParams();
@@ -32,13 +33,25 @@ const FurnitureDetails = () => {
 
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState('');
-
-  const { data: furniture, loading, refetch } = useFetch<ProductDetails>(
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [newSelectedImage, setNewSelectedImage] =
+    useState<ImagePicker.ImagePickerAsset | null>(null);
+  const {
+    data: furniture,
+    loading,
+    refetch,
+  } = useFetch<ProductDetails>(
     () => fetchFurnitureDetails(productId!),
     !!productId
   );
-  const { wishlist, addItemToWishlist, removeItemFromWishlist, user, token, triggerGlobalRefresh } = useAuth();
+  const {
+    wishlist,
+    addItemToWishlist,
+    removeItemFromWishlist,
+    user,
+    token,
+    triggerGlobalRefresh,
+  } = useAuth();
   const [isOrdering, setIsOrdering] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
 
@@ -53,6 +66,12 @@ const FurnitureDetails = () => {
     dimensions: { width: "", height: "", depth: "" },
     tags: "",
   });
+  const imageUri =
+  newSelectedImage && newSelectedImage.uri
+    ? newSelectedImage.uri
+    : formState.thumbnailUrl && formState.thumbnailUrl !== ""
+      ? formState.thumbnailUrl
+      : null;
   const [formLoading, setFormLoading] = useState(false);
 
   React.useEffect(() => {
@@ -71,9 +90,31 @@ const FurnitureDetails = () => {
         },
         tags: (furniture.tags || []).join(", "),
       });
+      setNewSelectedImage(null);
     }
   }, [editModalVisible, furniture]);
+  const handleImagePick = async () => {
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permissionResult.granted === false) {
+      Alert.alert(
+        "Permission Required",
+        "You need to allow access to your photos to upload a new image."
+      );
+      return;
+    }
 
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setNewSelectedImage(result.assets[0]);
+    }
+  };
   const handleWishlistToggle = () => {
     if (!user) {
       router.push("/login");
@@ -93,7 +134,10 @@ const FurnitureDetails = () => {
       return;
     }
     if (!furniture?.isApproved) {
-      Alert.alert("Not Available", "This product is not yet available for purchase.");
+      Alert.alert(
+        "Not Available",
+        "This product is not yet available for purchase."
+      );
       return;
     }
     Alert.alert(
@@ -124,7 +168,10 @@ const FurnitureDetails = () => {
               Alert.alert("Success", "Order placed successfully!");
               router.push("/(tabs)/orders");
             } catch (error: any) {
-              Alert.alert("Order Failed", error.message || "Could not place order.");
+              Alert.alert(
+                "Order Failed",
+                error.message || "Could not place order."
+              );
             } finally {
               setIsOrdering(false);
             }
@@ -151,7 +198,7 @@ const FurnitureDetails = () => {
 
   const handleRejectSubmit = async () => {
     if (!token || !furniture || !rejectionReason.trim()) {
-      Alert.alert('Error', 'Please provide a reason for rejection.');
+      Alert.alert("Error", "Please provide a reason for rejection.");
       return;
     }
     setIsActionLoading(true);
@@ -160,7 +207,7 @@ const FurnitureDetails = () => {
       Alert.alert("Success", "Product has been rejected.");
       triggerGlobalRefresh();
       setRejectModalVisible(false);
-      setRejectionReason('');
+      setRejectionReason("");
       router.back();
     } catch (error: any) {
       Alert.alert("Error", error.message || "Failed to reject product.");
@@ -168,7 +215,7 @@ const FurnitureDetails = () => {
       setIsActionLoading(false);
     }
   };
-  
+
   const handleDelete = () => {
     if (!token || !furniture) return;
     Alert.alert(
@@ -187,7 +234,10 @@ const FurnitureDetails = () => {
               triggerGlobalRefresh();
               router.back();
             } catch (error: any) {
-              Alert.alert("Error", error.message || "Failed to delete product.");
+              Alert.alert(
+                "Error",
+                error.message || "Failed to delete product."
+              );
             } finally {
               setIsActionLoading(false);
             }
@@ -198,38 +248,68 @@ const FurnitureDetails = () => {
   };
 
   const handleFormChange = (field: keyof typeof formState, value: string) => {
-    setFormState(prev => ({ ...prev, [field]: value }));
+    setFormState((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleDimensionChange = (field: 'width' | 'height' | 'depth', value: string) => {
-    setFormState(prev => ({
+  const handleDimensionChange = (
+    field: "width" | "height" | "depth",
+    value: string
+  ) => {
+    setFormState((prev) => ({
       ...prev,
-      dimensions: { ...prev.dimensions, [field]: value }
+      dimensions: { ...prev.dimensions, [field]: value },
     }));
   };
 
   const handleEditFormSubmit = async () => {
     setFormLoading(true);
     try {
-      if (!token || !furniture?.id) throw new Error("Authentication error. Please log in again.");
+      if (!token || !furniture?.id)
+        throw new Error("Authentication error. Please log in again.");
 
-      const updatedData = {
-        ...formState,
-        price: parseFloat(formState.price) || 0,
-        dimensions: {
-          width: parseFloat(formState.dimensions.width) || 0,
-          height: parseFloat(formState.dimensions.height) || 0,
-          depth: parseFloat(formState.dimensions.depth) || 0,
-          unit: furniture.dimensions?.unit || 'cm',
-        },
-        tags: formState.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+      const formData = new FormData();
+
+      // Append text/json fields
+      formData.append("name", formState.name);
+      formData.append("description", formState.description);
+      formData.append("price", formState.price);
+      formData.append("category", formState.category);
+      formData.append("modelUrl", formState.modelUrl);
+
+      const dimensions = {
+        width: parseFloat(formState.dimensions.width) || 0,
+        height: parseFloat(formState.dimensions.height) || 0,
+        depth: parseFloat(formState.dimensions.depth) || 0,
+        unit: furniture.dimensions?.unit || "cm",
       };
+      formData.append("dimensions", JSON.stringify(dimensions));
 
-      await updateProduct(token, furniture.id, updatedData);
-      
+      const tagsArray = formState.tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+      formData.append("tags", JSON.stringify(tagsArray));
+
+      // Conditionally append the new image file
+      if (newSelectedImage) {
+        const uriParts = newSelectedImage.uri.split(".");
+        const fileType = uriParts[uriParts.length - 1];
+        const file = {
+          uri: newSelectedImage.uri,
+          name: `thumbnail.${fileType}`,
+          type: `image/${fileType}`,
+        } as any;
+        if(newSelectedImage){
+          formData.append("thumbnail", file);
+        }
+      }
+
+      await updateProduct(token, furniture.id, formData);
+
       Alert.alert("Success", "Product updated successfully!");
       setEditModalVisible(false);
       refetch();
+      triggerGlobalRefresh();
     } catch (error: any) {
       Alert.alert("Error", error.message || "Failed to update product.");
     } finally {
@@ -241,7 +321,9 @@ const FurnitureDetails = () => {
     if (!user || !furniture) return <View />;
     switch (user.role) {
       case "client":
-        const isWishlisted = (wishlist || []).some((item) => item.productId === furniture.id);
+        const isWishlisted = (wishlist || []).some(
+          (item) => item.productId === furniture.id
+        );
         return (
           <View>
             <TouchableOpacity
@@ -268,7 +350,12 @@ const FurnitureDetails = () => {
                 onPress={handleOrderProduct}
                 style={[
                   styles.actionButton,
-                  { backgroundColor: !furniture.isApproved || isOrdering ? "#a3a3a3" : "#1e293b" },
+                  {
+                    backgroundColor:
+                      !furniture.isApproved || isOrdering
+                        ? "#a3a3a3"
+                        : "#1e293b",
+                  },
                 ]}
                 disabled={!furniture.isApproved || isOrdering}
               >
@@ -291,7 +378,9 @@ const FurnitureDetails = () => {
                 className="bg-accent p-4 rounded-lg items-center"
                 onPress={() => setEditModalVisible(true)}
               >
-                <Text className="text-white font-bold text-base">Edit Product Details</Text>
+                <Text className="text-white font-bold text-base">
+                  Edit Product Details
+                </Text>
               </TouchableOpacity>
               <Modal
                 visible={editModalVisible}
@@ -299,34 +388,139 @@ const FurnitureDetails = () => {
                 onRequestClose={() => setEditModalVisible(false)}
                 transparent={false}
               >
-                <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
-                  <ScrollView className="flex-1 bg-w-200 p-5 pt-16" contentContainerStyle={{ paddingBottom: 40 }}>
-                    <Text className="text-2xl font-bold text-bl mb-6">Edit Product</Text>
-                    <Text className="text-bl font-semibold mb-2 mt-2">Name</Text>
-                    <TextInput placeholder="Product Name" value={formState.name} onChangeText={t => handleFormChange('name', t)} className="bg-g-100 p-3 rounded-lg mb-3" />
-                    <Text className="text-bl font-semibold mb-2 mt-2">Description</Text>
-                    <TextInput placeholder="Description" value={formState.description} onChangeText={t => handleFormChange('description', t)} className="bg-g-100 p-3 rounded-lg mb-3 h-24" multiline />
-                    <Text className="text-bl font-semibold mb-2 mt-2">Price</Text>
-                    <TextInput placeholder="Price" value={formState.price} onChangeText={t => handleFormChange('price', t)} className="bg-g-100 p-3 rounded-lg mb-3" keyboardType="numeric" />
-                    <Text className="text-bl font-semibold mb-2 mt-2">Category</Text>
-                    <TextInput placeholder="Category" value={formState.category} onChangeText={t => handleFormChange('category', t)} className="bg-g-100 p-3 rounded-lg mb-3" />
-                    <Text className="text-bl font-semibold mb-2 mt-2">Thumbnail URL</Text>
-                    <TextInput placeholder="Thumbnail URL" value={formState.thumbnailUrl} onChangeText={t => handleFormChange('thumbnailUrl', t)} className="bg-g-100 p-3 rounded-lg mb-3" />
-                    <Text className="text-bl font-semibold mb-2 mt-2">3D Model URL</Text>
-                    <TextInput placeholder="3D Model URL" value={formState.modelUrl} onChangeText={t => handleFormChange('modelUrl', t)} className="bg-g-100 p-3 rounded-lg mb-3" />
-                    <Text className="text-bl font-semibold mb-2 mt-2">Tags (comma-separated)</Text>
-                    <TextInput placeholder="e.g. modern, leather, cozy" value={formState.tags} onChangeText={t => handleFormChange('tags', t)} className="bg-g-100 p-3 rounded-lg mb-3" />
-                    <Text className="text-bl font-semibold mt-4 mb-2">Dimensions ({furniture.dimensions?.unit || 'cm'})</Text>
-                    <View className="flex-row gap-x-2">
-                      <TextInput placeholder="Width" value={formState.dimensions.width} onChangeText={t => handleDimensionChange('width', t)} className="bg-g-100 p-3 rounded-lg mb-3 flex-1" keyboardType="numeric" />
-                      <TextInput placeholder="Height" value={formState.dimensions.height} onChangeText={t => handleDimensionChange('height', t)} className="bg-g-100 p-3 rounded-lg mb-3 flex-1" keyboardType="numeric" />
-                      <TextInput placeholder="Depth" value={formState.dimensions.depth} onChangeText={t => handleDimensionChange('depth', t)} className="bg-g-100 p-3 rounded-lg mb-3 flex-1" keyboardType="numeric" />
-                    </View>
-                    <TouchableOpacity onPress={handleEditFormSubmit} className="bg-br p-4 rounded-lg mt-4" disabled={formLoading}>
-                      {formLoading ? <ActivityIndicator color="#fff" /> : <Text className="text-w-100 text-center font-bold">Save Changes</Text>}
+                <KeyboardAvoidingView
+                  behavior={Platform.OS === "ios" ? "padding" : "height"}
+                  className="flex-1"
+                >
+                  <ScrollView
+                    className="flex-1 bg-w-200 p-5 pt-16"
+                    contentContainerStyle={{ paddingBottom: 40 }}
+                  >
+                    <Text className="text-2xl font-bold text-bl mb-6">
+                      Edit Product
+                    </Text>
+                    <Text className="text-bl font-semibold mb-2 mt-2">
+                      Name
+                    </Text>
+                    <TextInput
+                      placeholder="Product Name"
+                      value={formState.name}
+                      onChangeText={(t) => handleFormChange("name", t)}
+                      className="bg-g-100 p-3 rounded-lg mb-3"
+                    />
+                    <Text className="text-bl font-semibold mb-2 mt-2">
+                      Description
+                    </Text>
+                    <TextInput
+                      placeholder="Description"
+                      value={formState.description}
+                      onChangeText={(t) => handleFormChange("description", t)}
+                      className="bg-g-100 p-3 rounded-lg mb-3 h-24"
+                      multiline
+                    />
+                    <Text className="text-bl font-semibold mb-2 mt-2">
+                      Price
+                    </Text>
+                    <TextInput
+                      placeholder="Price"
+                      value={formState.price}
+                      onChangeText={(t) => handleFormChange("price", t)}
+                      className="bg-g-100 p-3 rounded-lg mb-3"
+                      keyboardType="numeric"
+                    />
+                    <Text className="text-bl font-semibold mb-2 mt-2">
+                      Category
+                    </Text>
+                    <TextInput
+                      placeholder="Category"
+                      value={formState.category}
+                      onChangeText={(t) => handleFormChange("category", t)}
+                      className="bg-g-100 p-3 rounded-lg mb-3"
+                    />
+
+                    <Text className="text-bl font-semibold mb-2 mt-2">
+                      Thumbnail Image
+                    </Text>
+                    {imageUri ? (
+                      <Image source={{ uri: imageUri }} style={styles.image} />
+                    ) : (
+                      <View >
+                        <Text>No Image</Text>
+                      </View>
+                    )}
+                    <TouchableOpacity
+                      onPress={handleImagePick}
+                      className="bg-g-200 p-3 rounded-lg mb-3 items-center"
+                    >
+                      <Text className="text-bl font-semibold">
+                        Change Image
+                      </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setEditModalVisible(false)} className="bg-g-200 p-4 rounded-lg mt-2">
-                      <Text className="text-bl text-center font-bold">Cancel</Text>
+
+                    <Text className="text-bl font-semibold mb-2 mt-2">
+                      3D Model URL
+                    </Text>
+                    <TextInput
+                      placeholder="3D Model URL"
+                      value={formState.modelUrl}
+                      onChangeText={(t) => handleFormChange("modelUrl", t)}
+                      className="bg-g-100 p-3 rounded-lg mb-3"
+                    />
+                    <Text className="text-bl font-semibold mb-2 mt-2">
+                      Tags (comma-separated)
+                    </Text>
+                    <TextInput
+                      placeholder="e.g. modern, leather, cozy"
+                      value={formState.tags}
+                      onChangeText={(t) => handleFormChange("tags", t)}
+                      className="bg-g-100 p-3 rounded-lg mb-3"
+                    />
+                    <Text className="text-bl font-semibold mt-4 mb-2">
+                      Dimensions ({furniture.dimensions?.unit || "cm"})
+                    </Text>
+                    <View className="flex-row gap-x-2">
+                      <TextInput
+                        placeholder="Width"
+                        value={formState.dimensions.width}
+                        onChangeText={(t) => handleDimensionChange("width", t)}
+                        className="bg-g-100 p-3 rounded-lg mb-3 flex-1"
+                        keyboardType="numeric"
+                      />
+                      <TextInput
+                        placeholder="Height"
+                        value={formState.dimensions.height}
+                        onChangeText={(t) => handleDimensionChange("height", t)}
+                        className="bg-g-100 p-3 rounded-lg mb-3 flex-1"
+                        keyboardType="numeric"
+                      />
+                      <TextInput
+                        placeholder="Depth"
+                        value={formState.dimensions.depth}
+                        onChangeText={(t) => handleDimensionChange("depth", t)}
+                        className="bg-g-100 p-3 rounded-lg mb-3 flex-1"
+                        keyboardType="numeric"
+                      />
+                    </View>
+                    <TouchableOpacity
+                      onPress={handleEditFormSubmit}
+                      className="bg-br p-4 rounded-lg mt-4"
+                      disabled={formLoading}
+                    >
+                      {formLoading ? (
+                        <ActivityIndicator color="#fff" />
+                      ) : (
+                        <Text className="text-w-100 text-center font-bold">
+                          Save Changes
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => setEditModalVisible(false)}
+                      className="bg-g-200 p-4 rounded-lg mt-2"
+                    >
+                      <Text className="text-bl text-center font-bold">
+                        Cancel
+                      </Text>
                     </TouchableOpacity>
                   </ScrollView>
                 </KeyboardAvoidingView>
@@ -347,7 +541,7 @@ const FurnitureDetails = () => {
                 >
                   <Text style={styles.actionButtonText}>Approve</Text>
                 </TouchableOpacity>
-                 <TouchableOpacity
+                <TouchableOpacity
                   onPress={() => setRejectModalVisible(true)}
                   disabled={isActionLoading}
                   style={[styles.actionButton, { backgroundColor: "#f59e42" }]}
@@ -362,11 +556,13 @@ const FurnitureDetails = () => {
                 disabled={isActionLoading}
                 className="bg-red-600 p-4 rounded-lg items-center"
               >
-                {isActionLoading ? <ActivityIndicator color="#fff" /> : 
+                {isActionLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
                   <Text className="text-white font-bold text-base">
                     Delete Product Permanently
                   </Text>
-                }
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -395,10 +591,25 @@ const FurnitureDetails = () => {
             multiline
             numberOfLines={4}
           />
-          <TouchableOpacity style={styles.confirmRejectButton} onPress={handleRejectSubmit} disabled={isActionLoading || !rejectionReason.trim()}>
-            <Text style={styles.actionButtonText}>{isActionLoading ? <ActivityIndicator color="#fff" /> : "Confirm Reject"}</Text>
+          <TouchableOpacity
+            style={styles.confirmRejectButton}
+            onPress={handleRejectSubmit}
+            disabled={isActionLoading || !rejectionReason.trim()}
+          >
+            <Text style={styles.actionButtonText}>
+              {isActionLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                "Confirm Reject"
+              )}
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.cancelButton} onPress={() => setRejectModalVisible(false)}><Text>Cancel</Text></TouchableOpacity>
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={() => setRejectModalVisible(false)}
+          >
+            <Text>Cancel</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </Modal>
@@ -416,7 +627,10 @@ const FurnitureDetails = () => {
     return (
       <View style={styles.centered}>
         <Text style={styles.notFoundText}>Product not found.</Text>
-        <TouchableOpacity onPress={() => router.back()} style={styles.goBackButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.goBackButton}
+        >
           <Text style={styles.goBackText}>Go Back</Text>
         </TouchableOpacity>
       </View>
@@ -439,7 +653,10 @@ const FurnitureDetails = () => {
               { color: furniture?.isApproved ? "#16a34a" : "#eab308" },
             ]}
           >
-            Status: {furniture?.isApproved ? "Available for Purchase" : "Pending Approval"}
+            Status:{" "}
+            {furniture?.isApproved
+              ? "Available for Purchase"
+              : "Pending Approval"}
           </Text>
         </View>
         <Text style={styles.description}>{furniture?.description}</Text>
@@ -456,7 +673,8 @@ const FurnitureDetails = () => {
                 Width: {furniture.dimensions.width} {furniture.dimensions.unit}
               </Text>
               <Text style={styles.categoryText}>
-                Height: {furniture.dimensions.height} {furniture.dimensions.unit}
+                Height: {furniture.dimensions.height}{" "}
+                {furniture.dimensions.unit}
               </Text>
               <Text style={styles.categoryText}>
                 Depth: {furniture.dimensions.depth} {furniture.dimensions.unit}
@@ -481,33 +699,128 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
   image: { width: "100%", height: 256 },
   details: { paddingHorizontal: 24, paddingVertical: 24 },
-  productName: { fontSize: 24, fontWeight: "bold", color: "#1e293b", marginBottom: 8 },
-  statusBox: { marginBottom: 16, padding: 12, backgroundColor: "#f3f4f6", borderRadius: 8 },
+  productName: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#1e293b",
+    marginBottom: 8,
+  },
+  statusBox: {
+    marginBottom: 16,
+    padding: 12,
+    backgroundColor: "#f3f4f6",
+    borderRadius: 8,
+  },
   statusText: { fontWeight: "bold" },
   description: { color: "#64748b", marginBottom: 16 },
-  price: { fontSize: 28, fontWeight: "bold", color: "#f59e42", marginBottom: 16 },
+  price: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#f59e42",
+    marginBottom: 16,
+  },
   categoryBox: { marginBottom: 16 },
-  categoryLabel: { fontSize: 16, fontWeight: "bold", color: "#1e293b", marginBottom: 4 },
+  categoryLabel: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#1e293b",
+    marginBottom: 4,
+  },
   categoryText: { color: "#64748b" },
   dimensionsBox: { marginBottom: 24 },
   dimensionsRow: { flexDirection: "row", justifyContent: "space-between" },
-  seeInRoomButton: { marginHorizontal: 24, marginVertical: 12, backgroundColor: "#f59e42", padding: 16, borderRadius: 8, alignItems: "center" },
-  actionRow: { flexDirection: "row", gap: 12, paddingHorizontal: 24, marginTop: 12 },
-  actionButton: { flex: 1, paddingVertical: 16, borderRadius: 8, alignItems: "center", marginHorizontal: 4 },
+  seeInRoomButton: {
+    marginHorizontal: 24,
+    marginVertical: 12,
+    backgroundColor: "#f59e42",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  actionRow: {
+    flexDirection: "row",
+    gap: 12,
+    paddingHorizontal: 24,
+    marginTop: 12,
+  },
+  actionButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    marginHorizontal: 4,
+  },
   actionButtonText: { color: "#fff", fontWeight: "bold" },
   companyAction: { paddingHorizontal: 24, marginTop: 16, marginBottom: 12 },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
   notFoundText: { fontSize: 18, color: "#64748b" },
-  goBackButton: { marginTop: 24, backgroundColor: "#f3f4f6", padding: 12, borderRadius: 8, alignItems: "center" },
-  goBackButtonBottom: { marginHorizontal: 24, marginBottom: 24, backgroundColor: "#f3f4f6", padding: 16, borderRadius: 8, alignItems: "center" },
+  goBackButton: {
+    marginTop: 24,
+    backgroundColor: "#f3f4f6",
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  goBackButtonBottom: {
+    marginHorizontal: 24,
+    marginBottom: 24,
+    backgroundColor: "#f3f4f6",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+  },
   goBackText: { color: "#1e293b", fontWeight: "bold" },
-  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
-  modalContent: { width: '90%', backgroundColor: 'white', padding: 24, borderRadius: 12 },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 8, textAlign: 'center' },
-  modalSubtitle: { fontSize: 16, color: '#64748b', marginBottom: 16, textAlign: 'center' },
-  input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 6, padding: 12, marginBottom: 16, backgroundColor: "#fff", textAlignVertical: 'top' },
-  confirmRejectButton: { backgroundColor: '#ef4444', padding: 16, borderRadius: 8, alignItems: 'center', marginBottom: 8 },
-  cancelButton: { backgroundColor: '#e5e7eb', padding: 16, borderRadius: 8, alignItems: 'center' },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  modalContent: {
+    width: "90%",
+    backgroundColor: "white",
+    padding: 24,
+    borderRadius: 12,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  modalSubtitle: {
+    fontSize: 16,
+    color: "#64748b",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 6,
+    padding: 12,
+    marginBottom: 16,
+    backgroundColor: "#fff",
+    textAlignVertical: "top",
+  },
+  confirmRejectButton: {
+    backgroundColor: "#ef4444",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  cancelButton: {
+    backgroundColor: "#e5e7eb",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+  },
 });
 
 export default FurnitureDetails;
