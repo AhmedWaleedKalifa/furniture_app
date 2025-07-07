@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
+  Button,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import {
@@ -26,6 +27,7 @@ import useFetch from "@/services/useFetch";
 import { useAuth } from "@/context/AuthContext";
 import { ProductDetails } from "@/types/index";
 import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
 
 const FurnitureDetails = () => {
   const { id } = useLocalSearchParams();
@@ -36,6 +38,8 @@ const FurnitureDetails = () => {
   const [rejectionReason, setRejectionReason] = useState("");
   const [newSelectedImage, setNewSelectedImage] =
     useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [modelFile, setModelFile] =
+    useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const {
     data: furniture,
     loading,
@@ -67,9 +71,9 @@ const FurnitureDetails = () => {
     tags: "",
   });
   const imageUri =
-  newSelectedImage && newSelectedImage.uri
-    ? newSelectedImage.uri
-    : formState.thumbnailUrl && formState.thumbnailUrl !== ""
+    newSelectedImage && newSelectedImage.uri
+      ? newSelectedImage.uri
+      : formState.thumbnailUrl && formState.thumbnailUrl !== ""
       ? formState.thumbnailUrl
       : null;
   const [formLoading, setFormLoading] = useState(false);
@@ -113,6 +117,29 @@ const FurnitureDetails = () => {
 
     if (!result.canceled) {
       setNewSelectedImage(result.assets[0]);
+    }
+  };
+  const handleModelPick = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: [
+          "application/octet-stream",
+          "model/gltf-binary",
+          "application/zip",
+          "model/gltf+json",
+          "model/fbx",
+        ],
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setModelFile(result.assets[0]);
+      }
+    } catch (error: any) {
+      Alert.alert(
+        "Model File Error",
+        error.message || "Could not pick model file."
+      );
     }
   };
   const handleWishlistToggle = () => {
@@ -266,16 +293,19 @@ const FurnitureDetails = () => {
     try {
       if (!token || !furniture?.id)
         throw new Error("Authentication error. Please log in again.");
-
+  
       const formData = new FormData();
-
+  
       // Append text/json fields
       formData.append("name", formState.name);
       formData.append("description", formState.description);
       formData.append("price", formState.price);
       formData.append("category", formState.category);
-      formData.append("modelUrl", formState.modelUrl);
-
+  
+      // Do NOT send modelUrl directly if updating via file; backend will set this
+      // Only include modelUrl if you want to allow direct URL update (rare)
+      // formData.append("modelUrl", formState.modelUrl);
+  
       const dimensions = {
         width: parseFloat(formState.dimensions.width) || 0,
         height: parseFloat(formState.dimensions.height) || 0,
@@ -283,29 +313,37 @@ const FurnitureDetails = () => {
         unit: furniture.dimensions?.unit || "cm",
       };
       formData.append("dimensions", JSON.stringify(dimensions));
-
+  
       const tagsArray = formState.tags
         .split(",")
         .map((tag) => tag.trim())
         .filter(Boolean);
       formData.append("tags", JSON.stringify(tagsArray));
-
+  
       // Conditionally append the new image file
       if (newSelectedImage) {
         const uriParts = newSelectedImage.uri.split(".");
         const fileType = uriParts[uriParts.length - 1];
-        const file = {
+        // @ts-ignore
+        formData.append("thumbnail", {
           uri: newSelectedImage.uri,
           name: `thumbnail.${fileType}`,
-          type: `image/${fileType}`,
-        } as any;
-        if(newSelectedImage){
-          formData.append("thumbnail", file);
-        }
+          type: newSelectedImage.mimeType || `image/${fileType}`,
+        });
       }
-
+  
+      // Conditionally append the new 3D model file
+      // @ts-ignore
+      if (modelFile) {
+        formData.append("modelFile", {
+          uri: modelFile.uri,
+          name: modelFile.name || "model.glb",
+          type: modelFile.mimeType || "application/octet-stream",
+        }as any);
+      }
+  
       await updateProduct(token, furniture.id, formData);
-
+  
       Alert.alert("Success", "Product updated successfully!");
       setEditModalVisible(false);
       refetch();
@@ -316,7 +354,7 @@ const FurnitureDetails = () => {
       setFormLoading(false);
     }
   };
-
+  
   const renderRoleSpecificActions = () => {
     if (!user || !furniture) return <View />;
     switch (user.role) {
@@ -444,7 +482,7 @@ const FurnitureDetails = () => {
                     {imageUri ? (
                       <Image source={{ uri: imageUri }} style={styles.image} />
                     ) : (
-                      <View >
+                      <View>
                         <Text>No Image</Text>
                       </View>
                     )}
@@ -457,15 +495,15 @@ const FurnitureDetails = () => {
                       </Text>
                     </TouchableOpacity>
 
-                    <Text className="text-bl font-semibold mb-2 mt-2">
-                      3D Model URL
-                    </Text>
-                    <TextInput
-                      placeholder="3D Model URL"
-                      value={formState.modelUrl}
-                      onChangeText={(t) => handleFormChange("modelUrl", t)}
-                      className="bg-g-100 p-3 rounded-lg mb-3"
+                    <Button
+                      title="Pick New 3D Model"
+                      onPress={handleModelPick}
                     />
+                    {modelFile && (
+                      <Text style={{ marginTop: 8 }}>
+                        Selected Model: {modelFile.name}
+                      </Text>
+                    )}
                     <Text className="text-bl font-semibold mb-2 mt-2">
                       Tags (comma-separated)
                     </Text>

@@ -17,7 +17,10 @@ router.post(
   verifyToken,
   getUserProfile,
   requireCompanyOrAdmin,
-  upload.single('thumbnail'), // 'thumbnail' matches frontend
+  upload.fields([
+    { name: 'thumbnail', maxCount: 1 },
+    { name: 'modelFile', maxCount: 1 },
+  ]),
   sanitizeInput,
   productValidation,
   productController.createProduct
@@ -29,7 +32,10 @@ router.put(
   verifyToken,
   getUserProfile,
   requireCompanyOrAdmin,
-  upload.single('thumbnail'),
+  upload.fields([
+    { name: 'thumbnail', maxCount: 1 },
+    { name: 'modelFile', maxCount: 1 },
+  ]),
   productController.updateProduct
 );
 router.delete('/:id', verifyToken, getUserProfile, requireCompanyOrAdmin, productController.deleteProduct);

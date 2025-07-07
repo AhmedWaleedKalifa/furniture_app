@@ -76,6 +76,7 @@ const productValidation = [
     .notEmpty()
     .withMessage('Category is required'),
   body('modelUrl')
+    .optional()
     .isURL()
     .withMessage('Model URL must be a valid URL'),
   body('price')
@@ -131,7 +132,6 @@ const productValidation = [
       }
     })
     .withMessage('Tags must be a valid JSON array'),
-  // No validation for thumbnail here; handled by Multer
   (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -140,6 +140,7 @@ const productValidation = [
     next();
   }
 ];
+
 // Order validation rules
 const orderValidation = [
   body('items')
