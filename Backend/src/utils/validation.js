@@ -62,6 +62,38 @@ const loginValidation = [
 ];
 
 // Product validation rules
+// const productValidation = [
+//   body('name')
+//     .trim()
+//     .isLength({ min: 2, max: 100 })
+//     .withMessage('Product name must be between 2 and 100 characters'),
+//   body('description')
+//     .optional()
+//     .trim()
+//     .isLength({ max: 1000 })
+//     .withMessage('Description must be less than 1000 characters'),
+//   body('category')
+//     .trim()
+//     .notEmpty()
+//     .withMessage('Category is required'),
+//   body('dimensions.width')
+//     .isFloat({ min: 0.1 })
+//     .withMessage('Width must be a positive number'),
+//   body('dimensions.height')
+//     .isFloat({ min: 0.1 })
+//     .withMessage('Height must be a positive number'),
+//   body('dimensions.depth')
+//     .isFloat({ min: 0.1 })
+//     .withMessage('Depth must be a positive number'),
+//   body('modelUrl')
+//     .isURL()
+//     .withMessage('Model URL must be a valid URL'),
+//   body('price')
+//     .optional()
+//     .isFloat({ min: 0 })
+//     .withMessage('Price must be a positive number'),
+//   validate
+// ];
 const productValidation = [
   body('name')
     .trim()
@@ -76,25 +108,71 @@ const productValidation = [
     .trim()
     .notEmpty()
     .withMessage('Category is required'),
-  body('dimensions.width')
-    .isFloat({ min: 0.1 })
-    .withMessage('Width must be a positive number'),
-  body('dimensions.height')
-    .isFloat({ min: 0.1 })
-    .withMessage('Height must be a positive number'),
-  body('dimensions.depth')
-    .isFloat({ min: 0.1 })
-    .withMessage('Depth must be a positive number'),
   body('modelUrl')
     .isURL()
     .withMessage('Model URL must be a valid URL'),
   body('price')
-    .optional()
-    .isFloat({ min: 0 })
+    .notEmpty()
+    .withMessage('Price is required')
+    .bail()
+    .custom((value) => !isNaN(parseFloat(value)) && parseFloat(value) >= 0)
     .withMessage('Price must be a positive number'),
-  validate
+  body('dimensions')
+    .notEmpty()
+    .withMessage('Dimensions are required')
+    .bail()
+    .custom((value) => {
+      try {
+        const d = JSON.parse(value);
+        return (
+          typeof d.width === 'number' &&
+          d.width > 0 &&
+          typeof d.height === 'number' &&
+          d.height > 0 &&
+          typeof d.depth === 'number' &&
+          d.depth > 0 &&
+          typeof d.unit === 'string'
+        );
+      } catch {
+        return false;
+      }
+    })
+    .withMessage('Dimensions must be a valid JSON object with positive width, height, depth, and a unit'),
+  body('customizable')
+    .notEmpty()
+    .withMessage('Customizable is required')
+    .bail()
+    .custom((value) => {
+      try {
+        JSON.parse(value);
+        return true;
+      } catch {
+        return false;
+      }
+    })
+    .withMessage('Customizable must be a valid JSON object'),
+  body('tags')
+    .notEmpty()
+    .withMessage('Tags are required')
+    .bail()
+    .custom((value) => {
+      try {
+        const arr = JSON.parse(value);
+        return Array.isArray(arr);
+      } catch {
+        return false;
+      }
+    })
+    .withMessage('Tags must be a valid JSON array'),
+  // No validation for thumbnail here; handled by Multer
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ success: false, errors: errors.array() });
+    }
+    next();
+  }
 ];
-
 // Order validation rules
 const orderValidation = [
   body('items')

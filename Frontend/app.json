@@ -1,3 +1,4 @@
+
 {
   "expo": {
     "name": "Furnish AR",
@@ -37,7 +38,12 @@
           "backgroundColor": "#FFFFFF"
         }
       ],
-      "expo-web-browser"
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app needs access to your photos to let you select a product thumbnail."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

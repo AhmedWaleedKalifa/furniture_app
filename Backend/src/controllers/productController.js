@@ -2,55 +2,84 @@
 const { getFirestore, admin } = require('../config/firebase');
 const { v4: uuidv4 } = require('uuid');
 const cloudinary = require('../config/cloudinary'); // Adjust path as needed
+const streamUpload = (buffer) => {
+  return new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+          { folder: 'product_thumbnails', resource_type: 'image' },
+          (error, result) => {
+              if (result) {
+                  resolve(result);
+              } else {
+                  reject(error);
+              }
+          }
+      );
+      stream.end(buffer);
+  });
+};
 
 const createProduct = async (req, res) => {
   try {
-    const db = getFirestore();
-    let imageUrl = '';
-
-    if (req.file) {
-      // Upload buffer to Cloudinary
-      const result = await cloudinary.uploader.upload_stream(
-        { resource_type: 'image' },
-        (error, result) => {
-          if (error) throw error;
-          imageUrl = result.secure_url;
-        }
-      );
-      // Pipe the buffer to the upload stream
-      result.end(req.file.buffer);
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Thumbnail image is required.' });
     }
 
-    const productData = {
-      ...req.body,
+    // 1. Upload image to Cloudinary
+    const uploadResult = await streamUpload(req.file.buffer);
+    const thumbnailUrl = uploadResult.secure_url;
+
+    // 2. Parse fields (handle JSON-stringified fields)
+    const { name, description, category, price, modelUrl } = req.body;
+    let { tags, dimensions, customizable } = req.body;
+
+    if (!name || !description || !category || !price || !modelUrl) {
+      return res.status(400).json({ success: false, message: 'Missing required product fields.' });
+    }
+
+    // Parse JSON fields
+    try {
+      tags = tags ? JSON.parse(tags) : [];
+      dimensions = dimensions ? JSON.parse(dimensions) : {};
+      customizable = customizable ? JSON.parse(customizable) : {};
+    } catch (e) {
+      return res.status(400).json({ success: false, message: 'Invalid JSON in fields.' });
+    }
+
+    // 3. Construct product object (use thumbnailUrl for consistency)
+    const newProduct = {
+      name,
+      description,
+      category,
+      price: parseFloat(price),
+      modelUrl,
+      thumbnailUrl, // Consistent with old data
+      tags,
+      dimensions,
+      customizable,
       companyId: req.user.uid,
+      companyName: req.user.name || '',
       isApproved: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       views: 0,
       placements: 0,
       wishlistCount: 0,
-      thumbnail: imageUrl,
     };
 
-    const productRef = await db.collection('products').add(productData);
+    const db = getFirestore();
+    const productRef = await db.collection('products').add(newProduct);
 
     res.status(201).json({
       success: true,
-      message: 'Product created successfully',
-      data: {
-        id: productRef.id,
-        ...productData,
-      },
+      message: 'Product submitted for approval successfully',
+      data: { id: productRef.id, ...newProduct }
     });
   } catch (error) {
-    console.error('Create product error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error creating product',
-    });
+    console.error("Error creating product:", error);
+    res.status(500).json({ success: false, message: 'Server error while creating product', error: error.message });
   }
 };
+
 
 
 // Get all products with filtering

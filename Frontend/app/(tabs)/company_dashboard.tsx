@@ -1,12 +1,10 @@
 // furniture_app (Copy)/Frontend/app/(tabs)/company_dashboard.tsx
 
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, Modal, TextInput, ScrollView, Image } from 'react-native';
-// FIX: Import useMemo to efficiently filter data
 import React, { useState, useMemo, useEffect } from 'react';
 import useFetch from '../../services/useFetch';
 import { getCompanyProducts, createProduct } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { icons } from '../../constants/icons';
 import { useCompanyOnly } from '../../lib/useRoleAcess';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -22,10 +20,8 @@ const initialFormState = {
 };
 
 const CompanyDashboard = () => {
-    // FIX: Get the full user object to access the user's ID (uid)
     const { token, user } = useAuth();
     const { hasAccess, isLoading: roleIsLoading } = useCompanyOnly();    
-    // FIX: Rename fetched data to 'allProducts' to reflect it contains products from all companies
     const { data: allProducts, loading: fetchIsLoading, error, refetch } = useFetch(() => getCompanyProducts(token!), !!token);
     
     const [isModalVisible, setModalVisible] = useState(false);
@@ -33,46 +29,44 @@ const CompanyDashboard = () => {
     const [formData, setFormData] = useState(initialFormState);
     const [selectedImage, setSelectedImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
 
-    // FIX: Create a new memoized list that filters 'allProducts' to only show items
-    // belonging to the currently logged-in company.
     const products = useMemo(() => {
         if (!allProducts || !user) return [];
         return allProducts.filter(product => product.companyId === user.uid);
     }, [allProducts, user]);
 
     useEffect(() => {
-                // Clear selected image when modal closes
-                if (!isModalVisible) {
-                    setSelectedImage(null);
-                    setFormData(initialFormState);
-                }
-            }, [isModalVisible]);
+        if (!isModalVisible) {
+            setSelectedImage(null);
+            setFormData(initialFormState);
+        }
+    }, [isModalVisible]);
         
-            const handleImagePick = async () => {
-                const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-                if (permissionResult.granted === false) {
-                    Alert.alert("Permission Required", "You need to allow access to your photos to upload an image.");
-                    return;
-                }
+    const handleImagePick = async () => {
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (permissionResult.granted === false) {
+            Alert.alert("Permission Required", "You need to allow access to your photos to upload an image.");
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+        });
         
-                const result = await ImagePicker.launchImageLibraryAsync({
-                    mediaTypes: ImagePicker.MediaType.Images, // Updated from MediaTypeOptions.Images
-                    allowsEditing: true,
-                    aspect: [4, 3],
-                    quality: 1,
-                });
-        
-                if (!result.canceled) {
-                    setSelectedImage(result.assets[0]);
-                }
-            };
+        if (!result.canceled) {
+            setSelectedImage(result.assets[0]);
+        }
+    };
          
     const handleCreateProduct = async () => {
         if (!token) {
             return Alert.alert('Authentication Error', 'You are not logged in. Please log in again.');
         }
+
         if (!formData.name || !formData.description || !formData.price || !formData.modelUrl || !selectedImage) {
-            return Alert.alert('Error', 'Please fill all fields and select a thumbnail image.');
+            return Alert.alert('Error', 'Please fill all fields, including the 3D Model URL, and select a thumbnail image.');
         }
 
         const price = parseFloat(formData.price);
@@ -86,24 +80,24 @@ const CompanyDashboard = () => {
 
         setIsSubmitting(true);
         try {
+            // This is the key: creating a real FormData object
             const productFormData = new FormData();
 
-            // Append text fields
+            // Append all fields
             productFormData.append('name', formData.name);
             productFormData.append('description', formData.description);
             productFormData.append('category', formData.category);
             productFormData.append('modelUrl', formData.modelUrl);
             productFormData.append('price', String(price));
-
-            // Create objects/arrays with correct data types before stringifying
+            
             const dimensions = { width, height, depth, unit: formData.dimensions.unit };
-            const tags = formData.tags.split(',').map(tag => tag.trim()).filter(Boolean);
-            
             productFormData.append('dimensions', JSON.stringify(dimensions));
-            productFormData.append('customizable', JSON.stringify(formData.customizable));
-            productFormData.append('tags', JSON.stringify(tags));
             
-            // Append the image file
+            productFormData.append('customizable', JSON.stringify(formData.customizable));
+            
+            const tagsArray = formData.tags.split(',').map(tag => tag.trim()).filter(Boolean);
+            productFormData.append('tags', JSON.stringify(tagsArray));
+            
             const uriParts = selectedImage.uri.split('.');
             const fileType = uriParts[uriParts.length - 1];
             
@@ -112,15 +106,15 @@ const CompanyDashboard = () => {
                 name: `thumbnail.${fileType}`,
                 type: `image/${fileType}`,
             } as any;
-
             productFormData.append('thumbnail', file);
             
+            console.log(productFormData)
             await createProduct(token, productFormData);
             Alert.alert('Success', 'Product submitted for approval!');
             setModalVisible(false);
             refetch();
         } catch (err: any) {
-            Alert.alert('Error', err.message || "Failed to create product.");
+            Alert.alert('Error Creating Product', err.message || "An unexpected error occurred.");
         } finally {
             setIsSubmitting(false);
         }
@@ -130,22 +124,21 @@ const CompanyDashboard = () => {
 
     if (isLoading) {
         return (
-          <View className="flex-1 justify-center items-center">
-            <ActivityIndicator size="large" color="#22bb22" />
+          <View className="flex-1 justify-center items-center bg-w-200">
+            <ActivityIndicator size="large" color="#625043" />
           </View>
         );
       }
     
       if (!hasAccess) {
         return (
-          <View className="flex-1 justify-center items-center">
+          <View className="flex-1 justify-center items-center bg-w-200">
             <Text className="text-lg text-red-500">Company Access Required</Text>
           </View>
         );
       }
     return (
         <View className="flex-1 bg-w-200 p-5 pt-16">
-            
             <Text className="text-2xl font-bold text-bl mb-4">Company Dashboard</Text>
             <TouchableOpacity onPress={() => setModalVisible(true)} className="bg-br p-3 rounded-lg mb-6">
                 <Text className="text-w-100 text-center font-bold">Add New Product</Text>
@@ -155,16 +148,15 @@ const CompanyDashboard = () => {
             {error && <Text className="text-red-500">{error.message}</Text>}
             
             <FlatList
-                // FIX: Use the new, correctly filtered 'products' array
                 data={products}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
                     <View className="bg-w-100 p-4 rounded-lg mb-4 shadow-md flex-row justify-between items-center">
-                        <View>
-                            <Text className="font-bold text-lg text-bl">{item.name}</Text>
+                        <View className="flex-1 pr-2">
+                            <Text className="font-bold text-lg text-bl" numberOfLines={1}>{item.name}</Text>
                             <Text className="text-g-300">${item.price}</Text>
                         </View>
-                        <Text className={`font-bold px-3 py-1 rounded-full ${item.isApproved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                        <Text className={`font-bold px-3 py-1 rounded-full text-xs ${item.isApproved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                             {item.isApproved ? 'Approved' : 'Pending'}
                         </Text>
                     </View>
@@ -172,14 +164,13 @@ const CompanyDashboard = () => {
                 ListEmptyComponent={<Text className="text-center text-g-300 mt-10">You have not added any products yet.</Text>}
             />
 
-            {/* Add Product Modal */}
             <Modal
                 animationType="slide"
                 transparent={false}
                 visible={isModalVisible}
                 onRequestClose={() => setModalVisible(false)}
             >
-                <ScrollView className="flex-1 bg-w-200 p-5 pt-16">
+                <ScrollView className="flex-1 bg-w-200 p-5 pt-16" contentContainerStyle={{ paddingBottom: 40 }}>
                     <Text className="text-2xl font-bold text-bl mb-6">New Product</Text>
                     <TextInput placeholder="Name" value={formData.name} onChangeText={t => setFormData(p => ({...p, name: t}))} className="bg-g-100 p-3 rounded-lg mb-3" />
                     <TextInput placeholder="Description" value={formData.description} onChangeText={t => setFormData(p => ({...p, description: t}))} className="bg-g-100 p-3 rounded-lg mb-3 h-24" multiline />
@@ -225,8 +216,8 @@ const CompanyDashboard = () => {
                     <TouchableOpacity onPress={handleCreateProduct} className="bg-br p-4 rounded-lg mt-4" disabled={isSubmitting}>
                         {isSubmitting ? <ActivityIndicator color="#fff" /> : <Text className="text-w-100 text-center font-bold">Submit for Approval</Text>}
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setModalVisible(false)} className="bg-g-200 p-4 rounded-lg mt-2">
-                        <Text className="text-w-100 text-center font-bold">Cancel</Text>
+                    <TouchableOpacity onPress={() => setModalVisible(false)} className="bg-g-200 p-4 rounded-lg mt-2 mb-10">
+                        <Text className="text-bl text-center font-bold">Cancel</Text>
                     </TouchableOpacity>
                 </ScrollView>
             </Modal>

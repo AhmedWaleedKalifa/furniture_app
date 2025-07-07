@@ -13,16 +13,16 @@ router.get('/categories', productController.getCategories);
 // Protected routes
 //router.post('/', verifyToken, getUserProfile, requireCompanyOrAdmin, sanitizeInput, productValidation, productController.createProduct);
 router.post(
-    '/',
-    verifyToken,
-    getUserProfile,
-    requireCompanyOrAdmin,
-    upload.single('thumbnail'), // 'thumbnail' is the field name from the frontend
-    sanitizeInput,
-    productValidation,
-    productController.createProduct
-  );
-  
+  '/',
+  verifyToken,
+  getUserProfile,
+  requireCompanyOrAdmin,
+  upload.single('thumbnail'), // 'thumbnail' matches frontend
+  sanitizeInput,
+  productValidation,
+  productController.createProduct
+);
+
 
 router.put('/:id', verifyToken, getUserProfile, requireCompanyOrAdmin, sanitizeInput, productValidation, productController.updateProduct);
 router.delete('/:id', verifyToken, getUserProfile, requireCompanyOrAdmin, productController.deleteProduct);

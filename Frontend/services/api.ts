@@ -1,5 +1,4 @@
 // furniture_app (Copy)/Frontend/services/api.ts
-
 import { User, Product, ProductDetails, Order, SupportTicket, AdminStats, WishlistItem } from '../types/index';
 const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL;
 
@@ -71,8 +70,6 @@ export const loginUser = async (credentials: LoginData): Promise<User & { token:
   if (!response.ok || !data.success) {
       throw new Error(data.message || 'Login failed');
   }
-  // The login response from the backend doesn't include createdAt,
-  // which is why the property must be optional in the User type.
   return data.data;
 };
 
@@ -121,10 +118,8 @@ export const logoutUser = async (token: string): Promise<void> => {
 
 // --- Furniture Functions (existing) ---
 
-// ... (at the top with other interfaces)
 export const fetchFurniture = async (): Promise<Product[]> => {
   const endpoint = `${BASE_URL}/api/products`
-  console.log("Fetching from endpoint:", endpoint); 
   const response = await fetch(endpoint, {
       method: 'GET',
       headers: {
@@ -133,18 +128,16 @@ export const fetchFurniture = async (): Promise<Product[]> => {
   });
   
   if (!response.ok) {
-      throw new Error(`Failed to fetch furniture ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({ message: response.statusText }));
+      throw new Error(errorData.message || `Failed to fetch furniture`);
   }
 
   const data = await response.json();
-
   return data.data;
 }
+
 export const fetchFurnitureDetails = async (id:string): Promise<ProductDetails> => {
   const endpoint = `${BASE_URL}/api/products/${id}`
-
-  console.log("Fetching from endpoint:", endpoint); 
-
   const response = await fetch(endpoint, {
       method: 'GET',
       headers: {
@@ -153,14 +146,13 @@ export const fetchFurnitureDetails = async (id:string): Promise<ProductDetails> 
   });
   
   if (!response.ok) {
-      throw new Error(`Failed to fetch furniture ${response.statusText}`);
+    const errorData = await response.json().catch(() => ({ message: response.statusText }));
+    throw new Error(errorData.message || `Failed to fetch furniture details`);
   }
 
   const data = await response.json();
   return data.data;
 }
-
-
 
 // Helper to create authenticated headers
 const getAuthHeaders = (token: string) => ({
@@ -179,15 +171,12 @@ export const getWishlist = async (token: string): Promise<WishlistItem[]> => {
       throw new Error(data.message || 'Failed to fetch wishlist');
   }
 
-  // FIX: The backend returns an object with an 'items' array.
   const itemsArray = data.data?.items || [];
-
   if (!Array.isArray(itemsArray)) {
     console.error("Wishlist data received from API is not in an expected array format:", data.data);
-    return []; // Return empty array to prevent crash
+    return [];
   }
 
-  // FIX: Map the flattened properties from the wishlist item directly.
   const mappedWishlist: WishlistItem[] = itemsArray.map((item: any) => ({
     productId: item.productId,
     addedAt: item.addedAt,
@@ -201,7 +190,6 @@ export const getWishlist = async (token: string): Promise<WishlistItem[]> => {
 
 
 export const addToWishlist = async (token: string, productData: WishlistAddData): Promise<void> => {
-  // FIX: Send the entire product data object to be stored.
   const response = await fetch(`${BASE_URL}/api/users/wishlist`, {
       method: 'POST',
       headers: getAuthHeaders(token),
@@ -210,6 +198,7 @@ export const addToWishlist = async (token: string, productData: WishlistAddData)
   const data = await response.json();
   if (!response.ok || !data.success) throw new Error(data.message || 'Failed to add to wishlist');
 };
+
 export const removeFromWishlist = async (token: string, productId: string): Promise<void> => {
   const response = await fetch(`${BASE_URL}/api/users/wishlist/${productId}`, {
       method: 'DELETE',
@@ -222,7 +211,6 @@ export const removeFromWishlist = async (token: string, productId: string): Prom
 };
 
 // --- Order Functions ---
-
 export const getMyOrders = async (token: string): Promise<Order[]> => {
     const response = await fetch(`${BASE_URL}/api/orders/my-orders`, {
         headers: getAuthHeaders(token)
@@ -232,7 +220,7 @@ export const getMyOrders = async (token: string): Promise<Order[]> => {
     return data.data;
 }
 
-export const createOrder = async (token: string, orderData: CreateOrderData): Promise<Order> => {
+export const createOrder = async (token: string, orderData: any): Promise<Order> => {
   const response = await fetch(`${BASE_URL}/api/orders`, {
       method: 'POST',
       headers: getAuthHeaders(token),
@@ -245,10 +233,7 @@ export const createOrder = async (token: string, orderData: CreateOrderData): Pr
   return data.data;
 };
 
-
-
 // --- Admin Functions ---
-
 export const getAllUsers = async (token: string): Promise<User[]> => {
   const response = await fetch(`${BASE_URL}/api/admin/users`, {
       headers: getAuthHeaders(token)
@@ -268,14 +253,18 @@ export const updateUserRole = async (token: string, userId: string, role: string
     if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update user role');
 };
 
-export const getAdminStats = async (token: string): Promise<AdminStats> => {
+export const getSystemStats = async (token: string) => {
     const response = await fetch(`${BASE_URL}/api/admin/stats`, {
-        headers: getAuthHeaders(token)
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
     const data = await response.json();
-    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch admin stats');
-    return data.data;
-}
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to fetch system stats');
+    }
+    return data;
+};
 
 export const getPendingProducts = async (token: string): Promise<Product[]> => {
     const response = await fetch(`${BASE_URL}/api/admin/products/pending`, {
@@ -296,75 +285,59 @@ export const approveProduct = async (token: string, productId: string): Promise<
     if (!response.ok || !data.success) throw new Error(data.message || 'Failed to approve product');
 }
 
+export const rejectProduct = async (token: string, productId: string, reason: string): Promise<void> => {
+    const response = await fetch(`${BASE_URL}/api/admin/products/${productId}/approve`, {
+      method: 'PUT',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ action: 'reject', reason })
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'Failed to reject product');
+    }
+};
 
-
-  
-  // --- Company Functions ---
-  
-  export const getCompanyProducts = async (token: string): Promise<Product[]> => {
-      const response = await fetch(`${BASE_URL}/api/products`, {
-          headers: getAuthHeaders(token)
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.message || "Failed to fetch company's products");
-      return data.data;
-  }
-  export const createProduct = async (token: string, productFormData: FormData): Promise<void> => {
-      const response = await fetch(`${BASE_URL}/api/products`, {
-          method: 'POST',
-        // When sending FormData, do NOT set the Content-Type header manually.
-          // The browser/fetch API will set it with the correct boundary.
-          headers: { 'Authorization': `Bearer ${token}` },
-          body: productFormData
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.message || "Failed to create product");
-  }
-
-  
-  export const deleteProduct = async (token: string, productId: string) => {
+export const deleteProduct = async (token: string, productId: string) => {
     const response = await fetch(`${BASE_URL}/api/admin/products/${productId}`, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      headers: getAuthHeaders(token),
     });
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.message || 'Failed to delete product');
     }
     return data;
-  };
-  
-  export const getAdminOrders = async (token: string) => {
-    const response = await fetch(`${BASE_URL}/api/admin/orders`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+};
+
+export const getAllOrders = async (token: string): Promise<Order[]> => {
+    const response = await fetch(`${BASE_URL}/api/orders`, {
+      headers: getAuthHeaders(token)
     });
     const data = await response.json();
-    if (!response.ok) {
+    if (!response.ok || !data.success) {
       throw new Error(data.message || 'Failed to fetch orders');
     }
     return data.data;
-  };
-  
-  // Add these functions to your API service
-export const getSystemStats = async (token: string) => {
-    const response = await fetch(`${BASE_URL}/api/admin/stats`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+};
+
+export const updateOrderStatus = async (
+    token: string, 
+    orderId: string, 
+    orderStatus: string, 
+    paymentStatus?: string
+): Promise<void> => {
+    const response = await fetch(`${BASE_URL}/api/orders/${orderId}/status`, {
+      method: 'PUT',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ orderStatus, paymentStatus })
     });
     const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to fetch system stats');
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'Failed to update order status');
     }
-    return data;
-  };
-  
-  export const getProductAnalytics = async (token: string) => {
+};
+
+export const getProductAnalytics = async (token: string) => {
     const response = await fetch(`${BASE_URL}/api/admin/analytics`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -375,10 +348,8 @@ export const getSystemStats = async (token: string) => {
       throw new Error(data.message || 'Failed to fetch product analytics');
     }
     return data;
-  };
-  // Add these functions to api.ts
+};
 
-// Delete User
 export const deleteUser = async (token: string, userId: string): Promise<void> => {
   const response = await fetch(`${BASE_URL}/api/admin/users/${userId}`, {
     method: 'DELETE',
@@ -388,54 +359,46 @@ export const deleteUser = async (token: string, userId: string): Promise<void> =
   if (!response.ok || !data.success) throw new Error(data.message || 'Failed to delete user');
 };
   
-  // Update Order Status
-  export const updateOrderStatus = async (
-    token: string, 
-    orderId: string, 
-    orderStatus: string, 
-    paymentStatus?: string
-  ): Promise<void> => {
-    const response = await fetch(`${BASE_URL}/api/orders/${orderId}/status`, {
-      method: 'PUT',
-      headers: getAuthHeaders(token),
-      body: JSON.stringify({ orderStatus, paymentStatus })
+// --- Company Functions ---
+export const getCompanyProducts = async (token: string): Promise<Product[]> => {
+    const response = await fetch(`${BASE_URL}/api/products`, {
+        headers: getAuthHeaders(token)
     });
     const data = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(data.message || 'Failed to update order status');
-    }
-  };
-  
-  // Reject Product
-  export const rejectProduct = async (token: string, productId: string, reason: string): Promise<void> => {
-    const response = await fetch(`${BASE_URL}/api/admin/products/${productId}/approve`, {
-      method: 'PUT',
-      headers: getAuthHeaders(token),
-      body: JSON.stringify({ action: 'reject', reason })
-    });
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(data.message || 'Failed to reject product');
-    }
-  };
-  
-  // Get All Orders (Admin)
-  export const getAllOrders = async (token: string): Promise<Order[]> => {
-    const response = await fetch(`${BASE_URL}/api/orders`, {
-      headers: getAuthHeaders(token)
-    });
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(data.message || 'Failed to fetch orders');
-    }
+    if (!response.ok || !data.success) throw new Error(data.message || "Failed to fetch company's products");
     return data.data;
-  };
-  
+}
 
+export const createProduct = async (token: string, productFormData: FormData): Promise<void> => {
+  const headers = new Headers();
+  headers.append('Authorization', `Bearer ${token}`);
+  // DO NOT set Content-Type, fetch does it automatically for FormData
+
+  const response = await fetch(`${BASE_URL}/api/products`, {
+      method: 'POST',
+      headers: headers,
+      body: productFormData
+  });
+
+  const data = await response.json();
+  if (!response.ok || !data.success) {
+      throw new Error(data.message || "Failed to create product");
+  }
+}
+export const updateProduct = async (token: string, productId: string, data: any) => {
+  const response = await fetch(`${BASE_URL}/api/products/${productId}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(token),
+    body: JSON.stringify(data),
+  });
+  const result = await response.json();
+  if (!response.ok || !result.success) {
+    throw new Error(result.message || 'Failed to update product');
+  }
+  return result.data;
+};
 
 // --- Support Ticket Functions ---
-
-
 export const createTicket = async (token: string, ticketData: { subject: string, message: string, priority: string, category: string }): Promise<void> => {
   const response = await fetch(`${BASE_URL}/api/support/tickets`, {
       method: 'POST',
@@ -445,67 +408,50 @@ export const createTicket = async (token: string, ticketData: { subject: string,
   const data = await response.json();
   if (!response.ok || !data.success) throw new Error(data.message || 'Failed to create ticket');
 }
-  export const getMyTickets = async (token: string): Promise<SupportTicket[]> => {
-    const response = await fetch(`${BASE_URL}/api/support/tickets`, {
-        headers: getAuthHeaders(token)
-    });
-    const data = await response.json();
-    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch tickets');
-    return data.data;
-}
 
-
-    
-export const getAdminTickets = async (token: string): Promise<SupportTicket[]> => {
-  const response = await fetch(`${BASE_URL}/api/admin/tickets`, { // This now matches our new route
+export const getMyTickets = async (token: string): Promise<SupportTicket[]> => {
+  const response = await fetch(`${BASE_URL}/api/support/tickets`, {
       headers: getAuthHeaders(token)
   });
   const data = await response.json();
   if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch tickets');
   return data.data;
 }
-    // FIX: Add function to get details of a single ticket, including messages
-    export const getTicketDetails = async (token: string, ticketId: string): Promise<SupportTicket> => {
-      const response = await fetch(`${BASE_URL}/api/support/tickets/${ticketId}`, {
-          headers: getAuthHeaders(token),
-      });
-      const data: ApiResponse<SupportTicket> = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch ticket details');
-      return data.data;
-  };
     
-    export const addTicketReply = async (token: string, ticketId: string, message: string): Promise<void> => {
-      const response = await fetch(`${BASE_URL}/api/support/tickets/${ticketId}/reply`, {
-          method: 'POST',
-          headers: getAuthHeaders(token),
-          body: JSON.stringify({ message }),
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to send reply');
-  };
-    // FIX: Add function for admins to update ticket status
-  export const updateTicketStatus = async (token: string, ticketId: string, status: string): Promise<void> => {
-    const response = await fetch(`${BASE_URL}/api/admin/tickets/${ticketId}/status`, { // Note the /admin/ path
-        method: 'PUT',
+export const getAdminTickets = async (token: string): Promise<SupportTicket[]> => {
+  const response = await fetch(`${BASE_URL}/api/admin/tickets`, {
+      headers: getAuthHeaders(token)
+  });
+  const data = await response.json();
+  if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch tickets');
+  return data.data;
+}
+
+export const getTicketDetails = async (token: string, ticketId: string): Promise<SupportTicket> => {
+    const response = await fetch(`${BASE_URL}/api/support/tickets/${ticketId}`, {
         headers: getAuthHeaders(token),
-        body: JSON.stringify({ status }),
+    });
+    const data: ApiResponse<SupportTicket> = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch ticket details');
+    return data.data;
+};
+    
+export const addTicketReply = async (token: string, ticketId: string, message: string): Promise<void> => {
+    const response = await fetch(`${BASE_URL}/api/support/tickets/${ticketId}/reply`, {
+        method: 'POST',
+        headers: getAuthHeaders(token),
+        body: JSON.stringify({ message }),
     });
     const data = await response.json();
-    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update status');
+    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to send reply');
 };
 
-export const updateProduct = async (token: string, productId: string, data: any) => {
-  const response = await fetch(`${BASE_URL}/api/products/${productId}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify(data),
+export const updateTicketStatus = async (token: string, ticketId: string, status: string): Promise<void> => {
+  const response = await fetch(`${BASE_URL}/api/admin/tickets/${ticketId}/status`, {
+      method: 'PUT',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ status }),
   });
-  const result = await response.json();
-  if (!response.ok || !result.success) {
-    throw new Error(result.message || 'Failed to update product');
-  }
-  return result.data;
+  const data = await response.json();
+  if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update status');
 };
