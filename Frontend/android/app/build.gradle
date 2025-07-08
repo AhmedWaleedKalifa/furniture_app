@@ -1,6 +1,7 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
+implementation project(':react-native-3d-model-view')
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 

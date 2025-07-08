@@ -127,7 +127,7 @@ export default function Index() {
         </Text>
         
         {loading ? (
-          <ActivityIndicator size="large" color="#22bb22" />
+          <ActivityIndicator size="large" color="#7df9ff" />
         ) : error ? (
           <Text className="text-red-500">Error: {error.message}</Text>
         ) : (

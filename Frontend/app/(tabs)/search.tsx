@@ -10,7 +10,6 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
-  StyleSheet,
 } from "react-native";
 import useFetch from "@/services/useFetch";
 import { fetchFurniture } from "@/services/api";
@@ -137,19 +136,16 @@ const Search = () => {
       visible={isFilterVisible}
       onRequestClose={() => setFilterVisible(false)}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.filterTitle}>Filters</Text>
+      <View className="flex-1 justify-end bg-black/50">
+        <View className="bg-w-100 rounded-t-2xl p-5 h-3/4">
+          <Text className="text-2xl font-bold mb-5 text-center text-bl">Filters</Text>
           <ScrollView>
-            <Text style={styles.filterSectionTitle}>Category</Text>
-            <View style={styles.tagsContainer}>
+            <Text className="text-lg font-semibold mt-4 mb-3 text-slate-700">Category</Text>
+            <View className="flex-row flex-wrap gap-2">
               {uniqueCategories.map((cat) => (
                 <TouchableOpacity
                   key={cat}
-                  style={[
-                    styles.tag,
-                    tempFilters.category === cat && styles.tagSelected,
-                  ]}
+                  className={`py-2 px-4 rounded-full ${tempFilters.category === cat ? 'bg-br' : 'bg-g-100'}`}
                   onPress={() =>
                     setTempFilters({
                       ...tempFilters,
@@ -157,21 +153,16 @@ const Search = () => {
                     })
                   }
                 >
-                  <Text
-                    style={[
-                      styles.tagText,
-                      tempFilters.category === cat && styles.tagTextSelected,
-                    ]}
-                  >
+                  <Text className={`${tempFilters.category === cat ? 'text-w-100' : 'text-slate-700'} font-medium`}>
                     {cat}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
-            <Text style={styles.filterSectionTitle}>Price Range</Text>
-            <View style={styles.priceInputContainer}>
+            <Text className="text-lg font-semibold mt-4 mb-3 text-slate-700">Price Range</Text>
+            <View className="flex-row justify-between gap-x-4">
               <TextInput
-                style={styles.priceInput}
+                className="flex-1 border border-g-200 rounded-lg p-3 text-base text-bl"
                 placeholder="Min Price"
                 keyboardType="numeric"
                 value={tempFilters.minPrice}
@@ -180,7 +171,7 @@ const Search = () => {
                 }
               />
               <TextInput
-                style={styles.priceInput}
+                className="flex-1 border border-g-200 rounded-lg p-3 text-base text-bl"
                 placeholder="Max Price"
                 keyboardType="numeric"
                 value={tempFilters.maxPrice}
@@ -189,41 +180,33 @@ const Search = () => {
                 }
               />
             </View>
-            <Text style={styles.filterSectionTitle}>Styles</Text>
-            <View style={styles.tagsContainer}>
+            <Text className="text-lg font-semibold mt-4 mb-3 text-slate-700">Styles</Text>
+            <View className="flex-row flex-wrap gap-2">
               {uniqueTags.map((tag) => (
                 <TouchableOpacity
                   key={tag}
-                  style={[
-                    styles.tag,
-                    tempFilters.tags.includes(tag) && styles.tagSelected,
-                  ]}
+                  className={`py-2 px-4 rounded-full ${tempFilters.tags.includes(tag) ? 'bg-br' : 'bg-g-100'}`}
                   onPress={() => toggleTag(tag)}
                 >
-                  <Text
-                    style={[
-                      styles.tagText,
-                      tempFilters.tags.includes(tag) && styles.tagTextSelected,
-                    ]}
-                  >
+                  <Text className={`${tempFilters.tags.includes(tag) ? 'text-w-100' : 'text-slate-700'} font-medium`}>
                     {tag}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
           </ScrollView>
-          <View style={styles.modalButtonContainer}>
+          <View className="flex-row mt-5 pt-3 border-t border-g-100 gap-x-3">
             <TouchableOpacity
-              style={styles.clearButton}
+              className="flex-1 p-4 rounded-lg bg-g-100 items-center"
               onPress={handleClearFilters}
             >
-              <Text style={styles.clearButtonText}>Clear All</Text>
+              <Text className="text-bl font-bold">Clear All</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.applyButton}
+              className="flex-1 p-4 rounded-lg bg-br items-center"
               onPress={handleApplyFilters}
             >
-              <Text style={styles.applyButtonText}>Apply Filters</Text>
+              <Text className="text-w-100 font-bold">Apply Filters</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -270,7 +253,7 @@ const Search = () => {
             {loading && (
               <ActivityIndicator
                 size="large"
-                color="#65B3B5"
+                color="#7df9ff"
                 className="my-3"
               />
             )}
@@ -301,86 +284,5 @@ const Search = () => {
     </View>
   );
 };
-const styles = StyleSheet.create({
-    modalOverlay: {
-      flex: 1,
-      justifyContent: 'flex-end',
-      backgroundColor: 'rgba(0,0,0,0.5)',
-    },
-    modalContent: {
-      backgroundColor: 'white',
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-      padding: 20,
-      height: '75%',
-    },
-    filterTitle: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      marginBottom: 20,
-      textAlign: 'center',
-      color: '#1e293b'
-    },
-    filterSectionTitle: {
-      fontSize: 18,
-      fontWeight: '600',
-      marginTop: 16,
-      marginBottom: 12,
-      color: '#475569'
-    },
-    priceInputContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      gap: 16
-    },
-    priceInput: {
-      flex: 1,
-      borderWidth: 1,
-      borderColor: '#e2e8f0',
-      borderRadius: 8,
-      padding: 12,
-      fontSize: 16,
-    },
-    tagsContainer: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 8,
-    },
-    tag: {
-      backgroundColor: '#f1f5f9',
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-      borderRadius: 20,
-    },
-    tagSelected: {
-      backgroundColor: '#625043',
-    },
-    tagText: {
-      color: '#475569',
-      fontWeight: '500',
-    },
-    tagTextSelected: {
-      color: 'white',
-    },
-    modalButtonContainer: {
-      flexDirection: 'row',
-      marginTop: 20,
-      paddingTop: 10,
-      borderTopWidth: 1,
-      borderTopColor: '#e2e8f0',
-      gap: 12,
-    },
-    clearButton: { flex: 1, padding: 16, borderRadius: 8, backgroundColor: '#f1f5f9' },
-    clearButtonText: { textAlign: 'center', color: '#475569', fontWeight: 'bold' },
-    applyButton: { flex: 1, padding: 16, borderRadius: 8, backgroundColor: '#625043' },
-    applyButtonText: { textAlign: 'center', color: 'white', fontWeight: 'bold' },
-    filterOption: {
-      padding: 10,
-    },
-    filterOptionSelected: {
-      fontWeight: 'bold',
-      color: '#625043',
-    }
-  });
   
 export default Search;

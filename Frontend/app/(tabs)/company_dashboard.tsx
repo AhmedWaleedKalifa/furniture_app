@@ -20,33 +20,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useCompanyOnly } from "../../lib/useRoleAcess";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from 'expo-document-picker';
-import { WebView } from 'react-native-webview';
-interface ModelViewerProps {
-    modelUrl: string;
-  }
-const ModelViewer = ({ modelUrl }:ModelViewerProps) => {
-  const html = `
-    <html>
-      <head>
-        <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-        <style>
-          body { margin: 0; }
-          model-viewer { width: 100vw; height: 100vh; }
-        </style>
-      </head>
-      <body>
-        <model-viewer src="${modelUrl}" auto-rotate camera-controls ar></model-viewer>
-      </body>
-    </html>
-  `;
-  return (
-    <WebView
-      originWhitelist={['*']}
-      source={{ html }}
-      style={{ flex: 1, height: 400 }}
-    />
-  );
-};
+import Native3DViewer from "../../components/ModelViewer";
 
 const initialFormState = {
   name: "",
@@ -118,7 +92,6 @@ const CompanyDashboard = () => {
           'application/zip',
           'model/gltf+json',
           'model/fbx',
-          'model/obj',
         ],
         copyToCacheDirectory: true,
         multiple: false,
@@ -126,7 +99,7 @@ const CompanyDashboard = () => {
       if (!result.canceled && result.assets && result.assets.length > 0) {
         setModelFile(result.assets[0]);
       }
-    } catch (error) {
+    } catch (error: any) {
       Alert.alert('Model File Error', error.message || 'Could not pick model file.');
     }
   };
@@ -215,7 +188,7 @@ const CompanyDashboard = () => {
       Alert.alert("Success", "Product submitted for approval!");
       setModalVisible(false);
       refetch();
-    } catch (err) {
+    } catch (err: any) {
       Alert.alert(
         "Error Creating Product",
         err.message || "An unexpected error occurred."
@@ -229,7 +202,7 @@ const CompanyDashboard = () => {
   if (isLoading) {
     return (
       <View className="flex-1 justify-center items-center bg-w-200">
-        <ActivityIndicator size="large" color="#625043" />
+        <ActivityIndicator size="large" color="#7df9ff" />
       </View>
     );
   }
@@ -253,7 +226,7 @@ const CompanyDashboard = () => {
         </Text>
       </TouchableOpacity>
 
-      {fetchIsLoading && <ActivityIndicator size="large" />}
+      {fetchIsLoading && <ActivityIndicator size="large" color="#7df9ff" />}
       {error && <Text className="text-red-500">{error.message}</Text>}
 
       <FlatList
@@ -300,33 +273,38 @@ const CompanyDashboard = () => {
             placeholder="Name"
             value={formData.name}
             onChangeText={(t) => setFormData((p) => ({ ...p, name: t }))}
-            className="bg-g-100 p-3 rounded-lg mb-3"
+            className="bg-g-100 p-3 rounded-lg mb-3 border border-g-200 text-bl"
+            placeholderTextColor="#666666"
           />
           <TextInput
             placeholder="Description"
             value={formData.description}
             onChangeText={(t) => setFormData((p) => ({ ...p, description: t }))}
-            className="bg-g-100 p-3 rounded-lg mb-3 h-24"
+            className="bg-g-100 p-3 rounded-lg mb-3 h-24 border border-g-200 text-bl"
             multiline
+            placeholderTextColor="#666666"
           />
           <TextInput
             placeholder="Price"
             value={formData.price}
             onChangeText={(t) => setFormData((p) => ({ ...p, price: t }))}
-            className="bg-g-100 p-3 rounded-lg mb-3"
+            className="bg-g-100 p-3 rounded-lg mb-3 border border-g-200 text-bl"
             keyboardType="numeric"
+            placeholderTextColor="#666666"
           />
           <TextInput
             placeholder="Category"
             value={formData.category}
             onChangeText={(t) => setFormData((p) => ({ ...p, category: t }))}
-            className="bg-g-100 p-3 rounded-lg mb-3"
+            className="bg-g-100 p-3 rounded-lg mb-3 border border-g-200 text-bl"
+            placeholderTextColor="#666666"
           />
           <TextInput
             placeholder="Tags (e.g. modern, cozy)"
             value={formData.tags}
             onChangeText={(t) => setFormData((p) => ({ ...p, tags: t }))}
-            className="bg-g-100 p-3 rounded-lg mb-3"
+            className="bg-g-100 p-3 rounded-lg mb-3 border border-g-200 text-bl"
+            placeholderTextColor="#666666"
           />
 
           <Text className="text-bl font-semibold mt-4 mb-2">
@@ -334,9 +312,9 @@ const CompanyDashboard = () => {
           </Text>
           <TouchableOpacity
             onPress={handleImagePick}
-            className="bg-g-100 p-3 rounded-lg mb-3 items-center"
+            className="bg-accent/20 p-3 rounded-lg mb-3 items-center border border-accent"
           >
-            <Text className="text-bl font-semibold">
+            <Text className="text-accent font-semibold">
               {selectedImage ? "Change Image" : "Select Image"}
             </Text>
           </TouchableOpacity>
@@ -347,15 +325,21 @@ const CompanyDashboard = () => {
               resizeMode="cover"
             />
           )}
-{/* {modelFile&&<ModelViewer modelUrl={modelFile.uri} ></ModelViewer>}
-<Button title="Pick 3D Model" onPress={handleModelPick} />
-{modelFile && <Text>{modelFile.name}</Text>} */}
-<Button title="Pick 3D Model" onPress={handleModelPick} />
-{modelFile && (
-  <Text style={{ marginTop: 8 }}>
-    Selected Model: {modelFile.name}
-  </Text>
-)}
+  <Text className="text-bl font-semibold mt-4 mb-2">3D Model File (.glb)</Text>
+        <TouchableOpacity
+            onPress={handleModelPick}
+            className="bg-accent/20 p-3 rounded-lg mb-3 items-center border border-accent"
+          >
+            <Text className="text-accent font-semibold">
+              {modelFile ? "Change 3D Model" : "Select 3D Model"}
+            </Text>
+          </TouchableOpacity>
+        {modelFile && (
+          <View className="mt-2 h-64 border border-g-200 rounded-lg overflow-hidden">
+            <Text className="text-center p-2 bg-g-100 text-bl">{modelFile.name}</Text>
+            <Native3DViewer modelUri={modelFile.uri} style={{ flex: 1 }} />
+          </View>
+        )}
           <Text className="text-bl font-semibold mt-4 mb-2">
             Dimensions (cm)
           </Text>
@@ -369,8 +353,9 @@ const CompanyDashboard = () => {
                   dimensions: { ...p.dimensions, width: t },
                 }))
               }
-              className="bg-g-100 p-3 rounded-lg mb-3 flex-1"
+              className="bg-g-100 p-3 rounded-lg mb-3 flex-1 border border-g-200 text-bl"
               keyboardType="numeric"
+              placeholderTextColor="#666666"
             />
             <TextInput
               placeholder="Height"
@@ -381,8 +366,9 @@ const CompanyDashboard = () => {
                   dimensions: { ...p.dimensions, height: t },
                 }))
               }
-              className="bg-g-100 p-3 rounded-lg mb-3 flex-1"
+              className="bg-g-100 p-3 rounded-lg mb-3 flex-1 border border-g-200 text-bl"
               keyboardType="numeric"
+              placeholderTextColor="#666666"
             />
             <TextInput
               placeholder="Depth"
@@ -393,8 +379,9 @@ const CompanyDashboard = () => {
                   dimensions: { ...p.dimensions, depth: t },
                 }))
               }
-              className="bg-g-100 p-3 rounded-lg mb-3 flex-1"
+              className="bg-g-100 p-3 rounded-lg mb-3 flex-1 border border-g-200 text-bl"
               keyboardType="numeric"
+              placeholderTextColor="#666666"
             />
           </View>
 
@@ -404,7 +391,7 @@ const CompanyDashboard = () => {
             disabled={isSubmitting}
           >
             {isSubmitting ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color="#7df9ff" />
             ) : (
               <Text className="text-w-100 text-center font-bold">
                 Submit for Approval

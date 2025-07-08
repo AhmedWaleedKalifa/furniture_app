@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import ProductsDashboard from '../../components/admin/ProductsDashboard';
 import OrdersDashboard from '../../components/admin/OrdersDashboard';
@@ -13,22 +13,21 @@ const AdminDashboard = () => {
   const { token } = useAuth();
   const { hasAccess, isLoading } = useAdminOnly();
   const [activeTab, setActiveTab] = useState('stats');
- // return <Text>Admin Dashboard Works!</Text>;
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading...</Text>
+      <View className="flex-1 justify-center items-center bg-w-200">
+        <ActivityIndicator size="large" color="#7df9ff" />
+        <Text className="mt-4 text-g-300">Loading...</Text>
       </View>
     );
   }
 
   if (!hasAccess) {
     return (
-      <View style={styles.accessContainer}>
-        <Text style={styles.accessText}>Admin Access Required</Text>
-        <Text style={styles.accessSubtext}>You need admin privileges to access this section.</Text>
+      <View className="flex-1 justify-center items-center p-5 bg-w-200">
+        <Text className="text-2xl font-bold text-red-500 mb-2">Admin Access Required</Text>
+        <Text className="text-base text-g-300 text-center">You need admin privileges to access this section.</Text>
       </View>
     );
   }
@@ -43,7 +42,7 @@ const AdminDashboard = () => {
   ];
 
   const renderContent = () => {
-    if (!token) return <Text style={styles.errorText}>Authentication required</Text>;
+    if (!token) return <Text className="text-red-500 text-base text-center m-5">Authentication required</Text>;
     
     switch (activeTab) {
       case 'stats': return <StatsDashboard token={token} />;
@@ -57,132 +56,37 @@ const AdminDashboard = () => {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Admin Dashboard</Text>
-        <Text style={styles.headerSubtitle}>System Management</Text>
+    <View className="flex-1 bg-w-200">
+      <View className="bg-br p-5 pt-12">
+        <Text className="text-3xl font-bold text-w-100">Admin Dashboard</Text>
+        <Text className="text-base text-w-100/80 mt-1">System Management</Text>
       </View>
 
-      {/* Tab Navigation */}
       <ScrollView 
         horizontal 
         showsHorizontalScrollIndicator={false} 
-        style={styles.tabContainer}
-        contentContainerStyle={styles.tabContent}
+        className="bg-w-100 border-b border-g-100 max-h-28"
+        contentContainerStyle={{ paddingHorizontal: 10 }}
       >
         {tabs.map((tab) => (
           <TouchableOpacity
             key={tab.id}
-            style={[styles.tab, activeTab === tab.id && styles.activeTab]}
+            className={`py-4 px-5 items-center border-b-2 ${activeTab === tab.id ? 'border-accent' : 'border-transparent'}`}
             onPress={() => setActiveTab(tab.id)}
           >
-            <Text style={styles.tabIcon}>{tab.icon}</Text>
-            <Text style={[styles.tabText, activeTab === tab.id && styles.activeTabText]}>
+            <Text className={`text-xl mb-1 ${activeTab === tab.id ? '' : 'opacity-50'}`}>{tab.icon}</Text>
+            <Text className={`text-sm font-semibold ${activeTab === tab.id ? 'text-accent' : 'text-g-300'}`}>
               {tab.title}
             </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
-      {/* Content */}
-      <View style={styles.contentContainer}>
+      <View className="flex-1 p-4">
         {renderContent()}
       </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666',
-  },
-  accessContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#f8f9fa',
-  },
-  accessText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#dc3545',
-    marginBottom: 8,
-  },
-  accessSubtext: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-  },
-  header: {
-    backgroundColor: '#007AFF',
-    padding: 20,
-    paddingTop: 50,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginTop: 4,
-  },
-  tabContainer: {
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-  },
-  tabContent: {
-    paddingHorizontal: 10,
-  },
-  tab: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  activeTab: {
-    borderBottomColor: '#007AFF',
-  },
-  tabIcon: {
-    fontSize: 20,
-    marginBottom: 4,
-  },
-  tabText: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
-  },
-  activeTabText: {
-    color: '#007AFF',
-    fontWeight: '600',
-  },
-  contentContainer: {
-    flex: 1,
-    padding: 16,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#dc3545',
-    textAlign: 'center',
-    margin: 20,
-  },
-});
 
 export default AdminDashboard;

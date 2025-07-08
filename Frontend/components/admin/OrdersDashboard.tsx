@@ -25,7 +25,7 @@ interface Order {
   totalAmount: number;
   orderStatus: string;
   paymentStatus: string;
-  createdAt: string;
+  createdAt: any; // Allow for Firestore timestamp object
   items: Array<{
     productName: string;
     quantity: number;
@@ -85,154 +85,142 @@ const OrdersDashboard: React.FC<OrdersDashboardProps> = ({ token }) => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'processing':
-        return '#007AFF';
-      case 'shipped':
-        return '#ffc107';
-      case 'delivered':
-        return '#28a745';
-      case 'cancelled':
-        return '#dc3545';
-      case 'paid':
-        return '#28a745';
-      case 'pending':
-        return '#ffc107';
-      case 'failed':
-        return '#dc3545';
-      default:
-        return '#6c757d';
+      case 'processing': return 'bg-blue-500';
+      case 'shipped': return 'bg-yellow-500';
+      case 'delivered': return 'bg-green-500';
+      case 'cancelled': return 'bg-red-500';
+      case 'paid': return 'bg-green-500';
+      case 'pending': return 'bg-yellow-500';
+      case 'failed': return 'bg-red-500';
+      default: return 'bg-gray-400';
     }
   };
+  
+  const getStatusTextColor = (status: string) => {
+    return (status === 'shipped' || status === 'pending') ? 'text-bl' : 'text-w-100';
+  }
 
   const renderOrder = ({ item }: { item: Order }) => (
-    <View style={styles.orderCard}>
-      <View style={styles.orderHeader}>
-        <Text style={styles.orderId}>
+    <View className="bg-w-100 rounded-xl p-4 mb-3 shadow-sm">
+      <View className="flex-row justify-between items-center mb-3">
+        <Text className="text-lg font-bold text-bl">
           Order #{item.orderNumber || item.id.substring(0, 8)}
         </Text>
-        <Text style={styles.orderDate}>
+        <Text className="text-sm text-g-300">
           {new Date(item.createdAt).toLocaleDateString()}
         </Text>
       </View>
 
-      <View style={styles.orderInfo}>
-        <Text style={styles.userEmail}>Customer: {item.userEmail}</Text>
-        <Text style={styles.orderTotal}>Total: ${item.totalAmount.toFixed(2)}</Text>
+      <View className="mb-4">
+        <Text className="text-sm text-accent font-semibold mb-1">Customer: {item.userEmail}</Text>
+        <Text className="text-base font-bold text-bl">Total: ${item.totalAmount.toFixed(2)}</Text>
         
-        <View style={styles.statusContainer}>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.orderStatus) }]}>
-            <Text style={styles.statusText}>{item.orderStatus.toUpperCase()}</Text>
+        <View className="flex-row mt-2">
+          <View className={`px-2 py-1 rounded-full mr-2 ${getStatusColor(item.orderStatus)}`}>
+            <Text className={`text-xs font-bold uppercase ${getStatusTextColor(item.orderStatus)}`}>{item.orderStatus.replace('_', ' ')}</Text>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.paymentStatus) }]}>
-            <Text style={styles.statusText}>{item.paymentStatus.toUpperCase()}</Text>
+          <View className={`px-2 py-1 rounded-full ${getStatusColor(item.paymentStatus)}`}>
+            <Text className={`text-xs font-bold uppercase ${getStatusTextColor(item.paymentStatus)}`}>{item.paymentStatus}</Text>
           </View>
         </View>
 
-        <Text style={styles.itemsHeader}>Items:</Text>
+        <Text className="text-sm font-semibold text-bl mt-3 mb-1">Items:</Text>
         {item.items.map((product, index) => (
-          <Text key={index} style={styles.itemText}>
+          <Text key={index} className="text-sm text-g-300">
             • {product.quantity}x {product.productName} - ${product.unitPrice.toFixed(2)}
           </Text>
         ))}
       </View>
 
       <TouchableOpacity
-        style={styles.updateButton}
-        onPress={() => openStatusModal(item)}
-      >
-        <Text style={styles.updateButtonText}>Update Status</Text>
-      </TouchableOpacity>
+  className="bg-accent/20 py-2 px-4 rounded-lg self-start"
+  onPress={() => openStatusModal(item)}
+>
+  <Text className="text-accent font-semibold">Update Status</Text>
+</TouchableOpacity>
     </View>
   );
 
   if (fetchLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading orders...</Text>
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color="#7df9ff" />
+        <Text className="mt-4 text-g-300">Loading orders...</Text>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Error: {error.message}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={refetch}>
-          <Text style={styles.retryButtonText}>Retry</Text>
+      <View className="flex-1 justify-center items-center p-5">
+        <Text className="text-base text-red-500 text-center mb-4">Error: {error.message}</Text>
+        <TouchableOpacity className="bg-accent py-2 px-5 rounded-lg" onPress={refetch}>
+          <Text className="text-w-100 font-bold">Retry</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Order Management</Text>
-        <Text style={styles.headerSubtitle}>
-          Total Orders: {orders?.length || 0}
-        </Text>
-      </View>
-
+    <View className="flex-1">
       <FlatList
         data={orders}
         renderItem={renderOrder}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={{ paddingBottom: 20 }}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No orders found</Text>
+          <View className="flex-1 justify-center items-center py-10">
+            <Text className="text-base text-g-300">No orders found</Text>
           </View>
         }
       />
 
-      {/* Status Update Modal */}
       <Modal
         visible={showStatusModal}
         transparent
-        animationType="slide"
+        animationType="fade"
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Update Order Status</Text>
-            <Text style={styles.modalSubtitle}>
+        <View className="flex-1 bg-black/60 justify-center items-center p-5">
+          <View className="bg-w-100 rounded-xl p-6 w-full max-w-sm">
+            <Text className="text-xl font-bold text-center text-bl mb-2">Update Order Status</Text>
+            <Text className="text-base text-g-300 text-center mb-5">
               Order #{selectedOrder?.orderNumber || selectedOrder?.id.substring(0, 8)}
             </Text>
             
-            <Text style={styles.pickerLabel}>Order Status:</Text>
+            <Text className="text-base font-semibold text-bl mb-2">Order Status:</Text>
             <StatusPicker
               selectedValue={newOrderStatus}
               onValueChange={setNewOrderStatus}
               options={ORDER_STATUS_OPTIONS}
-              style={styles.pickerContainer}
+              style={{marginBottom: 16}}
             />
 
-            <Text style={styles.pickerLabel}>Payment Status:</Text>
+            <Text className="text-base font-semibold text-bl mb-2">Payment Status:</Text>
             <StatusPicker
               selectedValue={newPaymentStatus}
               onValueChange={setNewPaymentStatus}
               options={PAYMENT_STATUS_OPTIONS}
-              style={styles.pickerContainer}
+              style={{marginBottom: 24}}
             />
 
-            <View style={styles.modalActions}>
+            <View className="flex-row justify-between">
               <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
+                className="flex-1 mr-2 bg-g-100 py-3 rounded-lg items-center"
                 onPress={() => setShowStatusModal(false)}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text className="text-bl font-bold">Cancel</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
-                style={[styles.modalButton, styles.confirmButton]}
+                className="flex-1 ml-2 bg-br py-3 rounded-lg items-center"
                 onPress={handleStatusUpdate}
                 disabled={loading}
               >
                 {loading ? (
-                  <ActivityIndicator color="white" size="small" />
+                  <ActivityIndicator color="#7df9ff" size="small" />
                 ) : (
-                  <Text style={styles.confirmButtonText}>Update</Text>
+                  <Text className="text-w-100 font-bold">Update</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -242,212 +230,5 @@ const OrdersDashboard: React.FC<OrdersDashboardProps> = ({ token }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#dc3545',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  retryButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: 'white',
-    fontWeight: '600',
-  },
-  header: {
-    padding: 20,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#212529',
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#6c757d',
-    marginTop: 4,
-  },
-  listContainer: {
-    padding: 16,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 50,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#6c757d',
-  },
-  orderCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  orderHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  orderId: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#212529',
-  },
-  orderDate: {
-    fontSize: 14,
-    color: '#6c757d',
-  },
-  orderInfo: {
-    marginBottom: 16,
-  },
-  userEmail: {
-    fontSize: 14,
-    color: '#007AFF',
-    marginBottom: 4,
-  },
-  orderTotal: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#28a745',
-    marginBottom: 8,
-  },
-  statusContainer: {
-    flexDirection: 'row',
-    marginBottom: 12,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginRight: 8,
-  },
-  statusText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  itemsHeader: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#212529',
-    marginBottom: 4,
-  },
-  itemText: {
-    fontSize: 12,
-    color: '#6c757d',
-    marginBottom: 2,
-  },
-  updateButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  updateButtonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 24,
-    width: '80%',
-    maxWidth: 400,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  modalSubtitle: {
-    fontSize: 16,
-    color: '#6c757d',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  pickerLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#212529',
-    marginBottom: 8,
-  },
-  pickerContainer: {
-    marginBottom: 16,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginHorizontal: 4,
-  },
-  cancelButton: {
-    backgroundColor: '#6c757d',
-  },
-  cancelButtonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  confirmButton: {
-    backgroundColor: '#007AFF',
-  },
-  confirmButtonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-});
 
 export default OrdersDashboard;

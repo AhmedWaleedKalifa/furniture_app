@@ -2,7 +2,10 @@ package com.anonymous.mobile_furniture_app
 
 import android.app.Application
 import android.content.res.Configuration
+import com.reactlibrary.RN3dModelViewPackage;
 
+// Add to getPackages() list:
+packages.add(new RN3dModelViewPackage());
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactNativeHost

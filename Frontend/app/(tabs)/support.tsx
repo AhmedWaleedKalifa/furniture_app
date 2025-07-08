@@ -89,15 +89,15 @@ const SupportScreen = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "open":
-        return "bg-blue-500 text-white";
+        return "bg-blue-500 text-w-100";
       case "in_progress":
-        return "bg-yellow-500 text-black";
+        return "bg-yellow-500 text-bl";
       case "resolved":
-        return "bg-green-500 text-white";
+        return "bg-green-500 text-w-100";
       case "closed":
-        return "bg-gray-500 text-white";
+        return "bg-gray-500 text-w-100";
       default:
-        return "bg-gray-300 text-black";
+        return "bg-g-200 text-bl";
     }
   };
 
@@ -113,7 +113,7 @@ const SupportScreen = () => {
         </Text>
       </TouchableOpacity>
 
-      {loading && <ActivityIndicator size="large" />}
+      {loading && <ActivityIndicator size="large" color="#7df9ff"/>}
       {error && (
         <Text className="text-red-500 text-center py-4">{error.message}</Text>
       )}
@@ -123,7 +123,7 @@ const SupportScreen = () => {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <Link href={`/ticket/${item.id}`} asChild>
-            <TouchableOpacity className="bg-w-100 p-4 rounded-lg mb-4 shadow-md">
+            <TouchableOpacity className="bg-w-100 p-4 rounded-lg mb-4 shadow-md border border-g-100">
               <View className="flex-row justify-between items-center">
                 <Text
                   className="font-bold text-lg text-bl flex-1 pr-2"
@@ -140,23 +140,21 @@ const SupportScreen = () => {
                 </Text>
               </View>
               {user?.role === "admin" && (
-                <Text className="text-gray-500 mt-1">
+                <Text className="text-g-300 mt-1">
                   From: {item.userName || "N/A"}
                 </Text>
               )}
               <Text className="text-g-300 mt-2" numberOfLines={2}>
                 {item.description}
               </Text>
-              <Text className="text-g-300 mt-2 text-xs">Created: {item.createdAt && typeof item.createdAt === 'object' && item.createdAt._seconds
+              <Text className="text-g-200 mt-2 text-xs">Created: {item.createdAt && typeof item.createdAt === 'object' && item.createdAt._seconds
                   ? new Date(item.createdAt._seconds * 1000).toLocaleDateString()
-                  : item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'}
+                  : item.createdAt ? new Date(item.createdAt as string).toLocaleDateString() : 'N/A'}
               </Text>
             </TouchableOpacity>
           </Link>
         )}
         ListEmptyComponent={
-          // FIX: Use a ternary operator to return null instead of `false`.
-          // This satisfies TypeScript's type requirements for the prop.
           !loading ? (
             <View className="flex-1 justify-center items-center mt-20">
               <Text className="text-center text-g-300 text-base">
@@ -165,7 +163,7 @@ const SupportScreen = () => {
             </View>
           ) : null
         }
-        contentContainerStyle={{ flexGrow: 1 }} // Ensures empty component can center
+        contentContainerStyle={{ flexGrow: 1 }}
       />
 
       <Modal
@@ -185,7 +183,8 @@ const SupportScreen = () => {
             placeholder="Subject"
             value={formData.subject}
             onChangeText={(t) => setFormData((p) => ({ ...p, subject: t }))}
-            className="bg-g-100 p-3 rounded-lg mb-3"
+            className="bg-g-100 p-3 rounded-lg mb-3 border border-g-200 text-bl"
+            placeholderTextColor="#666666"
           />
           <Text className="text-bl font-semibold mb-2 mt-2">Category</Text>
 
@@ -199,9 +198,10 @@ const SupportScreen = () => {
             placeholder="Please describe your issue..."
             value={formData.message}
             onChangeText={(t) => setFormData((p) => ({ ...p, message: t }))}
-            className="bg-g-100 p-3 rounded-lg mb-3 h-32"
+            className="bg-g-100 p-3 rounded-lg mb-3 h-32 border border-g-200 text-bl"
             multiline
             textAlignVertical="top"
+            placeholderTextColor="#666666"
           />
           <Text className="text-bl font-semibold mb-2 mt-2">Priority</Text>
           <StatusPicker
@@ -215,7 +215,7 @@ const SupportScreen = () => {
             disabled={isSubmitting}
           >
             {isSubmitting ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color="#7df9ff" />
             ) : (
               <Text className="text-w-100 text-center font-bold">
                 Submit Ticket

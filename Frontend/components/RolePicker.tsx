@@ -1,7 +1,5 @@
-// Frontend/components/admin/RolePicker.tsx
-
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, FlatList } from 'react-native';
 
 interface RolePickerProps {
   selectedValue: string;
@@ -28,10 +26,10 @@ const RolePicker = ({ selectedValue, onValueChange, style }: RolePickerProps) =>
   return (
     <>
       <TouchableOpacity
-        style={[styles.pickerButton, style]}
+        className="bg-g-100 rounded-lg p-3 justify-center border border-g-200"
         onPress={() => setModalVisible(true)}
       >
-        <Text style={styles.pickerButtonText}>{selectedLabel}</Text>
+        <Text className="text-base text-bl">{selectedLabel}</Text>
       </TouchableOpacity>
 
       <Modal
@@ -41,20 +39,20 @@ const RolePicker = ({ selectedValue, onValueChange, style }: RolePickerProps) =>
         onRequestClose={() => setModalVisible(false)}
       >
         <TouchableOpacity
-          style={styles.modalOverlay}
+          className="flex-1 bg-black/50 justify-center items-center"
           activeOpacity={1}
           onPress={() => setModalVisible(false)}
         >
-          <View style={styles.modalContent}>
+          <View className="bg-w-100 rounded-lg w-4/5 max-h-1/2 overflow-hidden">
             <FlatList
               data={ROLES}
               keyExtractor={item => item.value}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={styles.option}
+                  className="py-4 px-5 border-b border-g-100"
                   onPress={() => handleSelect(item.value)}
                 >
-                  <Text style={styles.optionText}>{item.label}</Text>
+                  <Text className="text-lg text-bl">{item.label}</Text>
                 </TouchableOpacity>
               )}
             />
@@ -64,44 +62,5 @@ const RolePicker = ({ selectedValue, onValueChange, style }: RolePickerProps) =>
     </>
   );
 };
-
-const styles = StyleSheet.create({
-  pickerButton: {
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-  },
-  pickerButtonText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    width: '80%',
-    maxHeight: '50%',
-    overflow: 'hidden',
-  },
-  option: {
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  optionText: {
-    fontSize: 18,
-    color: '#333',
-  },
-});
 
 export default RolePicker;

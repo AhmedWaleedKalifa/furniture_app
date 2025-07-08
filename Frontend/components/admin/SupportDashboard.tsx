@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import useFetch from '../../services/useFetch';
-import { getAdminTickets } from '../../services/api'; // Use the new admin-specific function
+import { getAdminTickets } from '../../services/api';
 import { SupportTicket } from '../../types';
 import { router } from 'expo-router';
 
@@ -14,99 +14,58 @@ const SupportDashboard: React.FC<SupportDashboardProps> = ({ token }) => {
 
   const getStatusColor = (status: string) => {
     switch(status) {
-        case 'open': return '#007AFF';
-        case 'in_progress': return '#ffc107';
-        case 'resolved': return '#28a745';
-        case 'closed': return '#6c757d';
-        default: return '#6c757d';
+        case 'open': return 'bg-blue-500';
+        case 'in_progress': return 'bg-yellow-500';
+        case 'resolved': return 'bg-green-500';
+        case 'closed': return 'bg-g-200';
+        default: return 'bg-g-200';
     }
   };
 
+  const getStatusTextColor = (status: string) => {
+    return status === 'in_progress' ? 'text-bl' : 'text-w-100';
+  }
+
   const renderTicket = ({ item }: { item: SupportTicket }) => (
     <TouchableOpacity
-      style={styles.ticketCard}
+      className="bg-w-100 p-4 rounded-xl mb-3 shadow-sm"
       onPress={() => router.push(`/ticket/${item.id}`)}
     >
-      <View style={styles.ticketHeader}>
-        <Text style={styles.ticketSubject} numberOfLines={1}>{item.subject}</Text>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-          <Text style={styles.statusText}>{item.status.replace('_', ' ').toUpperCase()}</Text>
+      <View className="flex-row justify-between items-center mb-2">
+        <Text className="text-base font-bold text-bl flex-1 pr-2" numberOfLines={1}>{item.subject}</Text>
+        <View className={`px-2 py-1 rounded-full ${getStatusColor(item.status)}`}>
+          <Text className={`text-xs font-bold uppercase ${getStatusTextColor(item.status)}`}>{item.status.replace('_', ' ')}</Text>
         </View>
       </View>
-      <Text style={styles.ticketInfo}>
+      <Text className="text-sm text-g-300 mb-1">
         User: {item.userName || item.userEmail}
       </Text>
-      <Text style={styles.ticketDate}>
-        Created: {new Date(item.createdAt).toLocaleDateString()}
+      <Text className="text-xs text-g-200">
+        Created: {new Date(item.createdAt as string).toLocaleDateString()}
       </Text>
     </TouchableOpacity>
   );
 
   if (loading) {
-    return <ActivityIndicator size="large" color="#007AFF" />;
+    return <View className="flex-1 justify-center items-center"><ActivityIndicator size="large" color="#7df9ff" /></View>;
   }
 
   if (error) {
-    return <Text style={styles.errorText}>Error: {error.message}</Text>;
+    return <Text className="text-red-500 text-center mt-5">Error: {error.message}</Text>;
   }
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1">
       <FlatList
         data={tickets}
         renderItem={renderTicket}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={<Text style={styles.emptyText}>No support tickets found.</Text>}
+        ListEmptyComponent={<View className="flex-1 justify-center items-center py-10"><Text className="text-base text-g-300">No support tickets found.</Text></View>}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 20 }}
       />
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  errorText: { color: 'red', textAlign: 'center', marginTop: 20 },
-  emptyText: { color: '#666', textAlign: 'center', marginTop: 50 },
-  ticketCard: {
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  ticketHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  ticketSubject: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    flex: 1,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusText: {
-    color: 'white',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  ticketInfo: {
-    fontSize: 14,
-    color: '#333',
-    marginBottom: 4,
-  },
-  ticketDate: {
-    fontSize: 12,
-    color: '#888',
-  },
-});
 
 export default SupportDashboard;

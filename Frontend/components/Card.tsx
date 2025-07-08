@@ -20,8 +20,8 @@ const Card = ({id,thumbnailUrl,name,category,price}:Product) => {
                 className='w-full h-52 rounded-lg'
                 resizeMode='cover'
             />
-            <Text className='text-sm font-bold text-bl mt-2' numberOfLines={1}>{name}</Text>
-            <View className='flex-row items-center justify-between gap-x-1 overflow-hidden max-w-20 '>
+            <Text className='text-sm font-bold text-bl mt-2 p-1' numberOfLines={1}>{name}</Text>
+            <View className='flex-row items-center justify-between gap-x-1 overflow-hidden w-full p-1 '>
                 <Text className='text-xs text-g-300 font-medium mt-1'>
                     ${price}
                 </Text>

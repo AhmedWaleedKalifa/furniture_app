@@ -5,7 +5,7 @@
     "slug": "mobile_furniture_app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo3.png",
+    "icon": "./assets/images/logo5.png",
     "scheme": "mobilefurnitureapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -15,10 +15,10 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logo3.png",
+        "foregroundImage": "./assets/images/logo5.png",
         "backgroundColor": "#ffffff",
         "backgroundImage": "./assets/images/background.png",
-        "monochromeImage": "./assets/images/logo3.png"
+        "monochromeImage": "./assets/images/logo5.png"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.anonymous.mobile_furniture_app"
@@ -26,14 +26,14 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/logo2.png"
+      "favicon": "./assets/images/logo5.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/logo3.png",
+          "image": "./assets/images/logo5.png",
           "resizeMode": "contain",
           "backgroundColor": "#FFFFFF"
         }
@@ -50,3 +50,7 @@
     }
   }
 }
+
+
+
+

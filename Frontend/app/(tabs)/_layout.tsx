@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { Tabs, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
-import { ActivityIndicator, View, Text } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 
 const TabIcon = ({ focused, name, color, size }: {
   focused: boolean;
@@ -40,8 +40,8 @@ export default function TabLayout() {
 
   if (loading || !user) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
+      <View className="flex-1 justify-center items-center bg-w-200">
+        <ActivityIndicator size="large" color="#7df9ff" />
       </View>
     );
   }
@@ -49,9 +49,9 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: '#8e8e93',
-        tabBarStyle: { backgroundColor: '#fff' },
+        tabBarActiveTintColor: '#65B3B5',
+        tabBarInactiveTintColor: '#A9A9A9',
+        tabBarStyle: { backgroundColor: '#FFFFFF', borderTopColor: '#F5F5F5' },
         headerShown: false,
       }}
     >
@@ -64,16 +64,6 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ focused, color, size }) => (
-            <TabIcon focused={focused} name={getIconName('person', focused)} color={color} size={size} />
-          ),
-        }}
-      />
-
       <Tabs.Screen
         name="search"
         options={{
@@ -106,7 +96,6 @@ export default function TabLayout() {
         }}
       />
       
-      {/* FIX: Orders tab should only be visible to clients */}
       <Tabs.Screen
         name="orders"
         options={{
@@ -135,6 +124,15 @@ export default function TabLayout() {
           href: user.role === 'admin' || user.role === 'company' || user.role === 'client' ? '/support' : null,
           tabBarIcon: ({ focused, color, size }) => (
             <TabIcon focused={focused} name={getIconName('help-circle', focused)} color={color} size={size} />
+          ),
+        }}
+      />
+       <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ focused, color, size }) => (
+            <TabIcon focused={focused} name={getIconName('person', focused)} color={color} size={size} />
           ),
         }}
       />

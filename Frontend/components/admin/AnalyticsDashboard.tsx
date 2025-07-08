@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
 import useFetch from '../../services/useFetch';
 import { getProductAnalytics } from '../../services/api';
 
@@ -15,17 +15,17 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ token }) => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading analytics...</Text>
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color="#7df9ff" />
+        <Text className="mt-4 text-g-300">Loading analytics...</Text>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Error: {error.message}</Text>
+      <View className="flex-1 justify-center items-center p-5">
+        <Text className="text-base text-red-500 text-center">Error: {error.message}</Text>
       </View>
     );
   }
@@ -33,228 +33,73 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ token }) => {
   const { topProducts = [], engagementTrends = {}, period = '30 days' } = analytics?.data || {};
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Analytics Dashboard</Text>
-        <Text style={styles.headerSubtitle}>Last {period}</Text>
+    <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <View className="p-5 bg-w-100 border-b border-g-100">
+        <Text className="text-2xl font-bold text-bl">Analytics Dashboard</Text>
+        <Text className="text-base text-g-300 mt-1">Last {period}</Text>
       </View>
 
-      {/* Engagement Overview */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Engagement Overview</Text>
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{engagementTrends.totalViews || 0}</Text>
-            <Text style={styles.statLabel}>Total Views</Text>
+      <View className="bg-w-100 m-4 rounded-xl p-5 shadow-sm">
+        <Text className="text-lg font-bold text-bl mb-4">Engagement Overview</Text>
+        <View className="flex-row justify-around mb-5">
+          <View className="items-center flex-1">
+            <Text className="text-2xl font-bold text-accent mb-1">{engagementTrends.totalViews || 0}</Text>
+            <Text className="text-xs text-g-300 text-center">Total Views</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{engagementTrends.totalPlacements || 0}</Text>
-            <Text style={styles.statLabel}>AR Placements</Text>
+          <View className="items-center flex-1">
+            <Text className="text-2xl font-bold text-accent mb-1">{engagementTrends.totalPlacements || 0}</Text>
+            <Text className="text-xs text-g-300 text-center">AR Placements</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{engagementTrends.totalWishlists || 0}</Text>
-            <Text style={styles.statLabel}>Wishlist Adds</Text>
+          <View className="items-center flex-1">
+            <Text className="text-2xl font-bold text-accent mb-1">{engagementTrends.totalWishlists || 0}</Text>
+            <Text className="text-xs text-g-300 text-center">Wishlist Adds</Text>
           </View>
         </View>
 
-        <View style={styles.averagesGrid}>
-          <View style={styles.averageCard}>
-            <Text style={styles.averageValue}>{engagementTrends.averageViews || 0}</Text>
-            <Text style={styles.averageLabel}>Avg Views/Product</Text>
+        <View className="flex-row justify-around">
+          <View className="items-center flex-1 bg-g-100 p-3 rounded-lg mx-1">
+            <Text className="text-base font-bold text-green-600 mb-1">{engagementTrends.averageViews || 0}</Text>
+            <Text className="text-xs text-g-300 text-center">Avg Views/Product</Text>
           </View>
-          <View style={styles.averageCard}>
-            <Text style={styles.averageValue}>{engagementTrends.averagePlacements || 0}</Text>
-            <Text style={styles.averageLabel}>Avg Placements/Product</Text>
+          <View className="items-center flex-1 bg-g-100 p-3 rounded-lg mx-1">
+            <Text className="text-base font-bold text-green-600 mb-1">{engagementTrends.averagePlacements || 0}</Text>
+            <Text className="text-xs text-g-300 text-center">Avg Placements/Product</Text>
           </View>
-          <View style={styles.averageCard}>
-            <Text style={styles.averageValue}>{engagementTrends.averageWishlists || 0}</Text>
-            <Text style={styles.averageLabel}>Avg Wishlist/Product</Text>
+          <View className="items-center flex-1 bg-g-100 p-3 rounded-lg mx-1">
+            <Text className="text-base font-bold text-green-600 mb-1">{engagementTrends.averageWishlists || 0}</Text>
+            <Text className="text-xs text-g-300 text-center">Avg Wishlist/Product</Text>
           </View>
         </View>
       </View>
 
       {/* Top Products */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Top Products by Views</Text>
+      <View className="bg-w-100 m-4 rounded-xl p-5 shadow-sm">
+        <Text className="text-lg font-bold text-bl mb-4">Top Products by Views</Text>
         {topProducts.length > 0 ? (
           topProducts.map((product: any, index: number) => (
-            <View key={product.id} style={styles.productRow}>
-              <View style={styles.productRank}>
-                <Text style={styles.rankText}>#{index + 1}</Text>
+            <View key={product.id} className="flex-row items-center py-3 border-b border-g-100">
+              <View className="w-10 items-center">
+                <Text className="text-base font-bold text-accent">#{index + 1}</Text>
               </View>
-              <View style={styles.productInfo}>
-                <Text style={styles.productName}>{product.name}</Text>
-                <Text style={styles.productViews}>{product.views || 0} views</Text>
+              <View className="flex-1 ml-3">
+                <Text className="text-base font-semibold text-bl mb-1" numberOfLines={1}>{product.name}</Text>
+                <Text className="text-sm text-g-300">{product.views || 0} views</Text>
               </View>
-              <View style={styles.productStats}>
-                <Text style={styles.productStat}>👁️ {product.views || 0}</Text>
-                <Text style={styles.productStat}>📱 {product.placements || 0}</Text>
-                <Text style={styles.productStat}>❤️ {product.wishlistCount || 0}</Text>
+              <View className="flex-row items-center">
+                <Text className="text-xs text-g-300 ml-2">👁️ {product.views || 0}</Text>
+                <Text className="text-xs text-g-300 ml-2">📱 {product.placements || 0}</Text>
+                <Text className="text-xs text-g-300 ml-2">❤️ {product.wishlistCount || 0}</Text>
               </View>
             </View>
           ))
         ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No product data available</Text>
+          <View className="items-center py-5">
+            <Text className="text-base text-g-300">No product data available</Text>
           </View>
         )}
       </View>
     </ScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#dc3545',
-    textAlign: 'center',
-  },
-  header: {
-    padding: 20,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#212529',
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#6c757d',
-    marginTop: 4,
-  },
-  section: {
-    backgroundColor: 'white',
-    margin: 16,
-    borderRadius: 12,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#212529',
-    marginBottom: 16,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  statCard: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#6c757d',
-    textAlign: 'center',
-  },
-  averagesGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  averageCard: {
-    alignItems: 'center',
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-    padding: 12,
-    borderRadius: 8,
-    marginHorizontal: 2,
-  },
-  averageValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#28a745',
-    marginBottom: 4,
-  },
-  averageLabel: {
-    fontSize: 10,
-    color: '#6c757d',
-    textAlign: 'center',
-  },
-  productRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f8f9fa',
-  },
-  productRank: {
-    width: 40,
-    alignItems: 'center',
-  },
-  rankText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#007AFF',
-  },
-  productInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  productName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#212529',
-    marginBottom: 2,
-  },
-  productViews: {
-    fontSize: 14,
-    color: '#6c757d',
-  },
-  productStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  productStat: {
-    fontSize: 12,
-    marginLeft: 8,
-    color: '#6c757d',
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 20,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#6c757d',
-  },
-});
 
 export default AnalyticsDashboard;

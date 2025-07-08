@@ -87,7 +87,7 @@ const Signup = () => {
       />
 
       <TouchableOpacity onPress={handleSignup} className="w-full bg-br rounded-lg h-14 justify-center items-center" disabled={loading}>
-        {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text className="text-w-100 font-bold text-base">Sign Up</Text>}
+        {loading ? <ActivityIndicator color="#7df9ff" /> : <Text className="text-w-100 font-bold text-base">Sign Up</Text>}
       </TouchableOpacity>
 
       <View className="flex-row justify-center mt-6">

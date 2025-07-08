@@ -14,7 +14,7 @@ const AuthLayout = () => {
     }, [user, isLoading]);
 
     if (isLoading) {
-        return <View className='flex-1 justify-center items-center'><ActivityIndicator size="large" /></View>
+        return <View className='flex-1 justify-center items-center bg-w-200'><ActivityIndicator size="large" color="#7df9ff" /></View>
     }
 
     return (

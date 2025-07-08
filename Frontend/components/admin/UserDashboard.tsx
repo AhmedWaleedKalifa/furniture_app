@@ -4,7 +4,6 @@ import {
   Text,
   FlatList,
   TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
   Alert,
   Modal,
@@ -80,51 +79,44 @@ const UsersDashboard: React.FC<UsersDashboardProps> = ({ token }) => {
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'admin':
-        return '#dc3545';
-      case 'company':
-        return '#007AFF';
-      case 'client':
-        return '#28a745';
-      default:
-        return '#6c757d';
+      case 'admin': return 'bg-red-500';
+      case 'company': return 'bg-br';
+      case 'client': return 'bg-accent';
+      default: return 'bg-g-200';
     }
   };
 
   const renderUser = ({ item }: { item: User }) => (
-    <View style={styles.userCard}>
-      <View style={styles.userInfo}>
-        <View style={styles.userHeader}>
-          <Text style={styles.userName}>{item.displayName}</Text>
-          <View style={[styles.roleBadge, { backgroundColor: getRoleColor(item.role) }]}>
-            <Text style={styles.roleText}>{item.role.toUpperCase()}</Text>
+    <View className="bg-w-100 rounded-xl p-4 mb-3 shadow-sm">
+      <View className="mb-3">
+        <View className="flex-row justify-between items-center mb-2">
+          <Text className="text-lg font-bold text-bl flex-1" numberOfLines={1}>{item.displayName}</Text>
+          <View className={`px-2 py-1 rounded-full ${getRoleColor(item.role)}`}>
+            <Text className="text-w-100 text-xs font-bold uppercase">{item.role}</Text>
           </View>
         </View>
-        <Text style={styles.userEmail}>{item.email}</Text>
-        <Text style={styles.userDate}>
-        Joined: {item.createdAt && typeof item.createdAt === 'object' && item.createdAt._seconds
+        <Text className="text-sm text-g-300 mb-1">{item.email}</Text>
+        <Text className="text-xs text-g-200">
+          Joined: {item.createdAt && typeof item.createdAt === 'object' && item.createdAt._seconds
             ? new Date(item.createdAt._seconds * 1000).toLocaleDateString()
-            : item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'
-          }        </Text>
-        {item.isVerified && (
-          <Text style={styles.verifiedText}>✅ Verified</Text>
-        )}
+            : item.createdAt ? new Date(item.createdAt as string).toLocaleDateString() : 'N/A'}
+        </Text>
       </View>
       
-      <View style={styles.userActions}>
+      <View className="flex-row justify-end gap-2 ">
         <TouchableOpacity
-          style={styles.actionButton}
+          className="bg-accent/20 py-2 px-4 rounded-lg"
           onPress={() => openRoleModal(item)}
         >
-          <Text style={styles.actionButtonText}>Change Role</Text>
+          <Text className="text-accent font-semibold">Change Role</Text>
         </TouchableOpacity>
         
         {item.role !== 'admin' && (
           <TouchableOpacity
-            style={[styles.actionButton, styles.deleteButton]}
+            className="bg-red-500/20 py-2 px-4 rounded-lg"
             onPress={() => handleDeleteUser(item)}
           >
-            <Text style={[styles.actionButtonText, styles.deleteButtonText]}>Delete</Text>
+            <Text className="text-red-600 font-semibold">Delete</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -133,77 +125,67 @@ const UsersDashboard: React.FC<UsersDashboardProps> = ({ token }) => {
 
   if (fetchLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading users...</Text>
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color="#7df9ff" />
+        <Text className="mt-4 text-g-300">Loading users...</Text>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Error: {error.message}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={refetch}>
-          <Text style={styles.retryButtonText}>Retry</Text>
+      <View className="flex-1 justify-center items-center p-5">
+        <Text className="text-base text-red-500 text-center mb-4">Error: {error.message}</Text>
+        <TouchableOpacity className="bg-accent py-2 px-5 rounded-lg" onPress={refetch}>
+          <Text className="text-w-100 font-bold">Retry</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>User Management</Text>
-        <Text style={styles.headerSubtitle}>
-          Total Users: {users?.length || 0}
-        </Text>
-      </View>
-
+    <View className="flex-1">
       <FlatList
         data={users || []}
         renderItem={renderUser}
         keyExtractor={(item) => item.uid}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={{ paddingBottom: 20 }}
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Role Change Modal */}
       <Modal
         visible={showRoleModal}
         transparent
-        animationType="slide"
+        animationType="fade"
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Change User Role</Text>
-            <Text style={styles.modalSubtitle}>
-              {selectedUser?.displayName}
-            </Text>
+        <View className="flex-1 bg-black/60 justify-center items-center p-5">
+          <View className="bg-w-100 rounded-xl p-6 w-full max-w-sm">
+            <Text className="text-xl font-bold text-center text-bl mb-2">Change User Role</Text>
+            <Text className="text-base text-g-300 text-center mb-5">{selectedUser?.displayName}</Text>
             
             <RolePicker
               selectedValue={newRole}
               onValueChange={setNewRole}
-              style={styles.pickerContainer}
+              style={{marginBottom: 24}}
             />
 
-            <View style={styles.modalActions}>
+            <View className="flex-row justify-between">
               <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
+                className="flex-1 mr-2 bg-g-100 py-3 rounded-lg items-center"
                 onPress={() => setShowRoleModal(false)}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text className="text-bl font-bold">Cancel</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
-                style={[styles.modalButton, styles.confirmButton]}
+                className="flex-1 ml-2 bg-br py-3 rounded-lg items-center"
                 onPress={handleRoleChange}
                 disabled={loading}
               >
                 {loading ? (
-                  <ActivityIndicator color="white" size="small" />
+                  <ActivityIndicator color="#7df9ff" size="small" />
                 ) : (
-                  <Text style={styles.confirmButtonText}>Update</Text>
+                  <Text className="text-w-100 font-bold">Update</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -213,193 +195,5 @@ const UsersDashboard: React.FC<UsersDashboardProps> = ({ token }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#dc3545',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  retryButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: 'white',
-    fontWeight: '600',
-  },
-  header: {
-    padding: 20,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#212529',
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#6c757d',
-    marginTop: 4,
-  },
-  listContainer: {
-    padding: 16,
-  },
-  userCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  userInfo: {
-    marginBottom: 12,
-  },
-  userHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#212529',
-    flex: 1,
-  },
-  roleBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  roleText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  userEmail: {
-    fontSize: 14,
-    color: '#6c757d',
-    marginBottom: 4,
-  },
-  userDate: {
-    fontSize: 12,
-    color: '#6c757d',
-  },
-  verifiedText: {
-    fontSize: 12,
-    color: '#28a745',
-    marginTop: 4,
-  },
-  userActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  actionButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    flex: 1,
-    marginHorizontal: 4,
-  },
-  actionButtonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  deleteButton: {
-    backgroundColor: '#dc3545',
-  },
-  deleteButtonText: {
-    color: 'white',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 24,
-    width: '80%',
-    maxWidth: 400,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  modalSubtitle: {
-    fontSize: 16,
-    color: '#6c757d',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  pickerContainer: {
-    marginBottom: 20,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginHorizontal: 4,
-  },
-  cancelButton: {
-    backgroundColor: '#6c757d',
-  },
-  cancelButtonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  confirmButton: {
-    backgroundColor: '#007AFF',
-  },
-  confirmButtonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-});
 
 export default UsersDashboard;

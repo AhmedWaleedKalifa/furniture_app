@@ -68,12 +68,20 @@ const OrdersScreen = () => {
     );
   };
  
-  if (!orders || orders.length === 0) return <Text>No orders found.</Text>;
+  if (loading) {
+    return (
+      <View className="flex-1 justify-center items-center bg-w-200">
+        <ActivityIndicator size="large" color="#7df9ff" />
+      </View>
+    );
+  }
+  
+  if (!orders || orders.length === 0) return <View className="flex-1 bg-w-200 px-5 pt-8 justify-center items-center"><Text className="text-g-300">No orders found.</Text></View>;
+
   return (
     <View className="flex-1 bg-white px-5 pt-8">
       <Text className="text-2xl font-bold text-bl mb-6">My Orders</Text>
 
-      {loading && <ActivityIndicator size="large" color="#22bb22" />}
       {error && <Text className="text-red-500">{error.message}</Text>}
 
       <FlatList
@@ -99,10 +107,14 @@ const OrdersScreen = () => {
             </Text>
 
             <Text className="text-g-200 mb-3">
-            Date: {item.createdAt && typeof item.createdAt === 'object' && item.createdAt._seconds
-                ? new Date(item.createdAt._seconds * 1000).toLocaleDateString()
-                : item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'
-              }            </Text>
+              Date: {(() => {
+                  if (!item.createdAt) return 'N/A';
+                  if (typeof item.createdAt === 'object' && '_seconds' in item.createdAt) {
+                    return new Date(item.createdAt._seconds * 1000).toLocaleDateString();
+                  }
+                  return new Date(item.createdAt as string).toLocaleDateString();
+                })()}
+            </Text>
 
             <View className="mb-3">
               <Text className="text-bl font-medium mb-2">Items:</Text>

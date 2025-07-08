@@ -67,7 +67,7 @@ const TicketDetailsScreen = () => {
     }
   };
 
-  if (loading && !ticket) return <ActivityIndicator style={{ flex: 1 }} size="large" />;
+  if (loading && !ticket) return <ActivityIndicator style={{ flex: 1 }} size="large" color="#7df9ff"/>;
   if (error) return <Text style={styles.errorText}>Error: {error.message}</Text>;
   if (!ticket) return <Text style={styles.errorText}>Ticket not found.</Text>;
   
@@ -111,10 +111,13 @@ const TicketDetailsScreen = () => {
               <Text style={[styles.senderName, msg.senderId === user?.uid && styles.userSenderName]}>{msg.senderName} ({msg.senderType})</Text>
               <Text style={[styles.messageText, msg.senderId === user?.uid && styles.userMessageText]}>{msg.message}</Text>
               <Text style={[styles.messageTimestamp, msg.senderId === user?.uid && styles.userTimestamp]}>
-              {msg.timestamp && typeof msg.timestamp === 'object' && msg.timestamp._seconds
-                  ? new Date(msg.timestamp._seconds * 1000).toLocaleString()
-                  : msg.timestamp ? new Date(msg.timestamp).toLocaleString() : ''
-                }
+                {(() => {
+                  if (!msg.timestamp) return '';
+                  if (typeof msg.timestamp === 'object' && '_seconds' in msg.timestamp) {
+                    return new Date(msg.timestamp._seconds * 1000).toLocaleString();
+                  }
+                  return new Date(msg.timestamp as string).toLocaleString();
+                })()}
               </Text>
             </View>
           ))}
@@ -133,7 +136,7 @@ const TicketDetailsScreen = () => {
             onPress={handleSendReply}
             disabled={isSubmitting || !reply.trim()}
           >
-            {isSubmitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.sendButtonText}>Send</Text>}
+            {isSubmitting ? <ActivityIndicator color="#7df9ff" /> : <Text style={styles.sendButtonText}>Send</Text>}
           </TouchableOpacity>
         </View>
       </View>

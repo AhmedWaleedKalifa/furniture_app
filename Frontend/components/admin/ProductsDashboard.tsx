@@ -150,27 +150,24 @@ const ProductsDashboard: React.FC<ProductsDashboardProps> = ({ token }) => {
         </Text>
       </View>
 
-      <View style={styles.productActions}>
+      <View className="flex-row justify-end space-x-2 mt-4 gap-2">
         <TouchableOpacity
-          style={[styles.actionButton, styles.approveButton]}
-          onPress={() => handleApprove(item.id)}
+className="bg-red-500/20 py-2 px-3 rounded-lg"          onPress={() => handleApprove(item.id)}
           disabled={loading}
         >
-          <Text style={styles.actionButtonText}>Approve</Text>
+          <Text className="text-red-600 font-semibold">Approve</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.actionButton, styles.rejectButton]}
-          onPress={() => openRejectModal(item)}
+ className="bg-yellow-500/20 py-2 px-3 rounded-lg"          onPress={() => openRejectModal(item)}
           disabled={loading}
         >
-          <Text style={styles.actionButtonText}>Reject</Text>
+          <Text className="text-yellow-700 font-semibold">Reject</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.actionButton, styles.deleteButton]}
-          onPress={() => handleDelete(item)}
+className="bg-green-500/20 py-2 px-3 rounded-lg"          onPress={() => handleDelete(item)}
           disabled={loading}
         >
-          <Text style={styles.actionButtonText}>Delete</Text>
+          <Text className="text-green-700 font-semibold">Delete</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -179,7 +176,7 @@ const ProductsDashboard: React.FC<ProductsDashboardProps> = ({ token }) => {
   if (fetchLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color="#7df9ff" />
         <Text style={styles.loadingText}>Loading products...</Text>
       </View>
     );
@@ -258,7 +255,7 @@ const ProductsDashboard: React.FC<ProductsDashboardProps> = ({ token }) => {
                 disabled={loading || !rejectionReason.trim()}
               >
                 {loading ? (
-                  <ActivityIndicator color="white" size="small" />
+                  <ActivityIndicator color="7df9ff" size="small" />
                 ) : (
                   <Text style={styles.confirmButtonText}>Reject</Text>
                 )}

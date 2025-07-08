@@ -39,7 +39,7 @@ const Login = () => {
         <TextInput
             className="w-full h-14 px-4 bg-g-100 rounded-lg border-2 border-g-200 focus:border-br mb-4 text-bl"
             placeholder="Email"
-            placeholderTextColor="#625043"
+            placeholderTextColor="#666666"
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -49,16 +49,21 @@ const Login = () => {
         <TextInput
             className="w-full h-14 px-4 bg-g-100 rounded-lg border-2 border-g-200 focus:border-br mb-6 text-bl"
             placeholder="Password"
-            placeholderTextColor="#625043"
+            placeholderTextColor="#666666"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
         />
 
         <TouchableOpacity onPress={handleLogin} className="w-full bg-br rounded-lg h-14 justify-center items-center" disabled={loading}>
-            {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text className="text-w-100 font-bold text-base">Log In</Text>}
+            {loading ? <ActivityIndicator color="#7df9ff" /> : <Text className="text-w-100 font-bold text-base">Log In</Text>}
         </TouchableOpacity>
-
+        {/* <TouchableOpacity
+          className="bg-accent/20 py-2 px-4 rounded-lg"
+          onPress={() => openRoleModal(item)}
+        >
+          <Text className="text-accent font-semibold">Change Role</Text>
+        </TouchableOpacity> */}
         <View className="flex-row justify-center mt-6">
             <Text className="text-g-300"> Do not have an account? </Text>
             <Link href="/signup" asChild>
