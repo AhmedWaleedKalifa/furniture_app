@@ -135,16 +135,15 @@ export const fetchFurniture = async (): Promise<Product[]> => {
   const data = await response.json();
   return data.data;
 }
-
-export const fetchFurnitureDetails = async (id:string): Promise<ProductDetails> => {
-  const endpoint = `${BASE_URL}/api/products/${id}`
+export const fetchFurnitureDetails = async (id: string): Promise<ProductDetails> => {
+  const endpoint = `${BASE_URL}/api/products/${id}`;
   const response = await fetch(endpoint, {
-      method: 'GET',
-      headers: {
-          accept: 'application/json',
-      }
+    method: 'GET',
+    headers: {
+      accept: 'application/json',
+    },
   });
-  
+
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ message: response.statusText }));
     throw new Error(errorData.message || `Failed to fetch furniture details`);
@@ -152,7 +151,9 @@ export const fetchFurnitureDetails = async (id:string): Promise<ProductDetails> 
 
   const data = await response.json();
   return data.data;
-}
+};
+
+
 
 // Helper to create authenticated headers
 const getAuthHeaders = (token: string) => ({
@@ -482,3 +483,27 @@ export const updateUserProfile = async (token: string, formData: FormData): Prom
   }
   return data.data;
 };
+
+export const getCompanyAnalytics = async (token: string) => {
+      const response = await fetch(`${BASE_URL}/api/company/analytics`, {
+        headers: getAuthHeaders(token),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch company analytics');
+      }
+      return data;
+  };
+
+  export const trackProductPlacement = async (token: string, productId: string): Promise<void> => {
+      const response = await fetch(`${BASE_URL}/api/products/${productId}/engagement`, {
+        method: 'POST',
+        headers: getAuthHeaders(token),
+        body: JSON.stringify({ type: 'ar_placement' }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        // We can choose to fail silently on the frontend for tracking events
+        console.warn('Failed to track AR placement:', data.message);
+      }
+    };

@@ -2,10 +2,7 @@ package com.anonymous.mobile_furniture_app
 
 import android.app.Application
 import android.content.res.Configuration
-import com.reactlibrary.RN3dModelViewPackage;
 
-// Add to getPackages() list:
-packages.add(new RN3dModelViewPackage());
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactNativeHost
@@ -25,10 +22,11 @@ class MainApplication : Application(), ReactApplication {
         this,
         object : DefaultReactNativeHost(this) {
           override fun getPackages(): List<ReactPackage> {
-            val packages = PackageList(this).packages
-            // Packages that cannot be autolinked yet can be added manually here, for example:
+           // Packages that cannot be autolinked yet can be added manually here, for example:
             // packages.add(MyReactNativePackage())
-            return packages
+            return PackageList(this).packages.apply {
+              // Add any packages that cannot be autolinked here
+            }
           }
 
           override fun getJSMainModuleName(): String = ".expo/.virtual-metro-entry"

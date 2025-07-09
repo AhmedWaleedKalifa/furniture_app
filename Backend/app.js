@@ -13,6 +13,7 @@ const adminRoutes = require('./src/routes/admin');
 const orderRoutes = require('./src/routes/orders');
 const supportRoutes = require('./src/routes/support');
 const uploadRoutes = require('./src/routes/upload');
+const companyRoutes = require('./src/routes/company');
 
 // Import Firebase config
 const { initializeFirebase } = require('./src/config/firebase');
@@ -100,6 +101,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/company', companyRoutes); 
 
 // 404 handler
 app.use('*', (req, res) => {

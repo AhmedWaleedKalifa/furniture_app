@@ -41,6 +41,6 @@ router.put(
 router.delete('/:id', verifyToken, getUserProfile, requireCompanyOrAdmin, productController.deleteProduct);
 
 // Engagement tracking
-router.post('/:id/engagement', optionalAuth, productController.trackEngagement);
+router.post('/:id/engagement', verifyToken, productController.trackEngagement);
 
 module.exports = router; 

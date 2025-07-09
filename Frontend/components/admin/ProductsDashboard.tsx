@@ -152,10 +152,10 @@ const ProductsDashboard: React.FC<ProductsDashboardProps> = ({ token }) => {
 
       <View className="flex-row justify-end space-x-2 mt-4 gap-2">
         <TouchableOpacity
-className="bg-red-500/20 py-2 px-3 rounded-lg"          onPress={() => handleApprove(item.id)}
+className="bg-green-500/20 py-2 px-3 rounded-lg"          onPress={() => handleApprove(item.id)}
           disabled={loading}
         >
-          <Text className="text-red-600 font-semibold">Approve</Text>
+          <Text className=" text-green-700 font-semibold">Approve</Text>
         </TouchableOpacity>
         <TouchableOpacity
  className="bg-yellow-500/20 py-2 px-3 rounded-lg"          onPress={() => openRejectModal(item)}
@@ -164,10 +164,10 @@ className="bg-red-500/20 py-2 px-3 rounded-lg"          onPress={() => handleApp
           <Text className="text-yellow-700 font-semibold">Reject</Text>
         </TouchableOpacity>
         <TouchableOpacity
-className="bg-green-500/20 py-2 px-3 rounded-lg"          onPress={() => handleDelete(item)}
+className="bg-red-500/20  py-2 px-3 rounded-lg"          onPress={() => handleDelete(item)}
           disabled={loading}
         >
-          <Text className="text-green-700 font-semibold">Delete</Text>
+          <Text className="text-red-600 font-semibold">Delete</Text>
         </TouchableOpacity>
       </View>
     </View>

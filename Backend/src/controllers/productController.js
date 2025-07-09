@@ -111,45 +111,7 @@ const getProducts = async (req, res) => {
   }
 };
 
-// Get single product by ID
-const getProduct = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const db = getFirestore();
 
-    const productDoc = await db.collection("products").doc(id).get();
-
-    if (!productDoc.exists) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found",
-      });
-    }
-
-    const product = { id: productDoc.id, ...productDoc.data() };
-
-    // Increment view count if user is authenticated
-    if (req.user) {
-      await db
-        .collection("products")
-        .doc(id)
-        .update({
-          views: (product.views || 0) + 1,
-        });
-    }
-
-    res.status(200).json({
-      success: true,
-      data: product,
-    });
-  } catch (error) {
-    console.error("Get product error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching product",
-    });
-  }
-};
 const createProduct = async (req, res) => {
   try {
     // Access files from multer.fields
@@ -377,64 +339,6 @@ const deleteProduct = async (req, res) => {
 };
 
 // Track product engagement
-const trackEngagement = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { type, metadata } = req.body;
-    const db = getFirestore();
-
-    const productDoc = await db.collection("products").doc(id).get();
-
-    if (!productDoc.exists) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found",
-      });
-    }
-
-    const updateData = {};
-
-    switch (type) {
-      case "view":
-        updateData.views = (productDoc.data().views || 0) + 1;
-        break;
-      case "placement":
-        updateData.placements = (productDoc.data().placements || 0) + 1;
-        break;
-      case "wishlist":
-        updateData.wishlistCount = (productDoc.data().wishlistCount || 0) + 1;
-        break;
-      default:
-        return res.status(400).json({
-          success: false,
-          message: "Invalid engagement type",
-        });
-    }
-
-    await db.collection("products").doc(id).update(updateData);
-
-    // Store detailed engagement data
-    if (req.user) {
-      await db.collection("products").doc(id).collection("engagement").add({
-        userId: req.user.uid,
-        type,
-        metadata,
-        timestamp: new Date(),
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Engagement tracked successfully",
-    });
-  } catch (error) {
-    console.error("Track engagement error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error tracking engagement",
-    });
-  }
-};
 
 // Get product categories
 const getCategories = async (req, res) => {
@@ -466,6 +370,86 @@ const getCategories = async (req, res) => {
   }
 };
 
+
+const getAllProducts = async (req, res) => {
+     
+  try {
+    const db = getFirestore();
+
+          const productsSnapshot = await db.collection('products').where('isApproved', '==', true).get();
+          const products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          res.status(200).json({ success: true, data: products });
+      } catch (error) {
+          res.status(500).json({ success: false, message: error.message });
+      }
+  };
+  
+  // controllers/productController.js
+
+const getProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = getFirestore();
+    const productRef = db.collection("products").doc(id);
+    const productDoc = await productRef.get();
+
+    if (!productDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    // Increment views atomically for every request (authenticated or not)
+    productRef.update({
+      views: admin.firestore.FieldValue.increment(1)
+    }).catch(err => {
+      console.error(`Failed to update view count for product ${id}:`, err);
+    });
+
+    const product = { id: productDoc.id, ...productDoc.data() };
+
+    res.status(200).json({
+      success: true,
+      data: product,
+    });
+  } catch (error) {
+    console.error("Get product error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching product",
+    });
+  }
+};
+
+  
+const trackEngagement = async (req, res) => {
+  try {
+      const { id: productId } = req.params;
+      const { type } = req.body;
+
+      if (type !== 'ar_placement') {
+          return res.status(400).json({ success: false, message: 'Invalid engagement type' });
+      }
+
+      const productRef = db.collection('products').doc(productId);
+      
+      // Use a transaction to safely read and update the product
+      await db.runTransaction(async (transaction) => {
+          const productDoc = await transaction.get(productRef);
+          if (!productDoc.exists) {
+              throw new Error("Product not found");
+          }
+          transaction.update(productRef, { placements: admin.firestore.FieldValue.increment(1) });
+      });
+
+      res.status(200).json({ success: true, message: 'AR placement tracked successfully' });
+
+  } catch (error) {
+      console.error(`Error tracking AR placement for product ${req.params.id}:`, error);
+      res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+};
 module.exports = {
   createProduct,
   getProducts,
@@ -474,4 +458,5 @@ module.exports = {
   deleteProduct,
   trackEngagement,
   getCategories,
+  getAllProducts,
 };
