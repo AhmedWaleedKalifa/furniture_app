@@ -464,3 +464,21 @@ export const updateTicketStatus = async (token: string, ticketId: string, status
   const data = await response.json();
   if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update status');
 };
+
+export const updateUserProfile = async (token: string, formData: FormData): Promise<User> => {
+  const response = await fetch(`${BASE_URL}/api/auth/profile`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      // 'Content-Type': 'multipart/form-data' is set automatically by fetch for FormData
+    },
+    body: formData,
+  });
+
+  const data: ApiResponse<User> = await response.json();
+
+  if (!response.ok || !data.success) {
+    throw new Error(data.message || 'Failed to update profile');
+  }
+  return data.data;
+};

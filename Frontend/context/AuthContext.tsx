@@ -39,6 +39,7 @@ interface AuthContextType {
   // FIX: Add a refresh state and a function to trigger it
   globalRefreshKey: number;
   triggerGlobalRefresh: () => void;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -184,6 +185,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // FIX: Expose refresh state and trigger
     globalRefreshKey,
     triggerGlobalRefresh,
+    setUser
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

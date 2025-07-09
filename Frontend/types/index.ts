@@ -8,6 +8,8 @@ export interface User {
   createdAt?: FirestoreTimestamp | string;  isVerified?: boolean;
   avatar?: string;
   phone?: string;
+  avatarUrl?: string; 
+  
 }
 
 export interface Product {

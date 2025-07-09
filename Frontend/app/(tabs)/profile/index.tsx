@@ -7,10 +7,11 @@ import {
   ActivityIndicator,
 } from "react-native";
 import React from "react";
-import { icons } from "../../constants/icons";
-import { useAuth } from "../../context/AuthContext";
+import { icons } from "@/constants/icons";
+import { useAuth } from "@/context/AuthContext";
 import { router } from "expo-router";
 
+// This helper component can stay here or be moved to its own file.
 const ProfileLink = ({
   label,
   onPress,
@@ -67,9 +68,14 @@ const Profile = () => {
         <View className="flex flex-1 flex-col mt-16">
           <View className="items-center w-full mb-8">
             <View className="size-32 rounded-full bg-br justify-center items-center border-4 border-w-100">
-              <Text className="text-6xl font-bold text-w-100">
-                {user.displayName.charAt(0).toUpperCase()}
-              </Text>
+              {/* Display user avatar if available, otherwise fallback to initial */}
+              {user.avatarUrl ? (
+                <Image source={{ uri: user.avatarUrl }} className="w-full h-full rounded-full" />
+              ) : (
+                <Text className="text-6xl font-bold text-w-100">
+                  {user.displayName.charAt(0).toUpperCase()}
+                </Text>
+              )}
             </View>
             <Text className="text-bl font-bold text-2xl mt-4" numberOfLines={1}>
               {user.displayName}
@@ -78,6 +84,11 @@ const Profile = () => {
           </View>
 
           <View className="px-5">
+          <ProfileLink
+      label="Edit Profile"
+      onPress={() => router.push('/profile/edit')}
+      />
+            
             {user.role === "admin" && (
               <ProfileLink
                 label="Admin Dashboard"

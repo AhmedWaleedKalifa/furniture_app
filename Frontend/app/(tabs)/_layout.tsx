@@ -127,10 +127,12 @@ export default function TabLayout() {
           ),
         }}
       />
+       {/* --- The Corrected Section --- */}
        <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
+          href: '/profile', // Provide the explicit path to the route
           tabBarIcon: ({ focused, color, size }) => (
             <TabIcon focused={focused} name={getIconName('person', focused)} color={color} size={size} />
           ),

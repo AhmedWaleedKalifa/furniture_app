@@ -1,4 +1,5 @@
-const { getAuth, getFirestore } = require('../config/firebase');
+const { getAuth, getFirestore, admin } = require('../config/firebase');
+const cloudinary = require('../config/cloudinary');
 
 // Create user profile in Firestore
 const createUserProfile = async (uid, userData) => {
@@ -128,37 +129,70 @@ const getCurrentUser = async (req, res) => {
   }
 };
 
-// Update user profile
 const updateProfile = async (req, res) => {
   try {
-    const { displayName, avatar, phone, address, preferences } = req.body;
+    const { uid } = req.user;
+    const { displayName, phone } = req.body;
     const db = getFirestore();
-    
-    const updateData = {
-      updatedAt: new Date()
-    };
+    const updateData = {};
 
-    if (displayName) updateData.displayName = displayName;
-    if (avatar) updateData.avatar = avatar;
-    if (phone) updateData.phone = phone;
-    if (address) updateData.address = address;
-    if (preferences) updateData.preferences = { ...req.userProfile.preferences, ...preferences };
+    // Update display name if provided
+    if (displayName) {
+      updateData.displayName = displayName;
+    }
 
-    await db.collection('users').doc(req.user.uid).update(updateData);
+    // Update phone number if provided
+    if (phone) {
+      updateData.phoneNumber = phone;
+    }
+
+    // Handle avatar upload to Cloudinary if a file is present
+    if (req.file) {
+      const b64 = Buffer.from(req.file.buffer).toString('base64');
+      const dataURI = "data:" + req.file.mimetype + ";base64," + b64;
+      const result = await cloudinary.uploader.upload(dataURI, {
+        folder: "avatars",
+        public_id: `avatar_${uid}`,
+        overwrite: true,
+        resource_type: "image"
+      });
+      updateData.avatarUrl = result.secure_url;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ success: false, message: 'No fields to update provided' });
+    }
+
+    updateData.updatedAt = new Date();
+
+    // Update Firestore user document
+    await db.collection('users').doc(uid).update(updateData);
+
+    // Update Firebase Auth user profile if display name or avatar changed
+    const authUpdatePayload = {};
+    if (displayName) authUpdatePayload.displayName = displayName;
+    if (updateData.avatarUrl) authUpdatePayload.photoURL = updateData.avatarUrl;
+
+    if (Object.keys(authUpdatePayload).length > 0) {
+      await admin.auth().updateUser(uid, authUpdatePayload);
+    }
+
+    // Fetch the fully updated user data to return
+    const userDoc = await db.collection('users').doc(uid).get();
+    const finalUserData = userDoc.data();
 
     res.status(200).json({
       success: true,
       message: 'Profile updated successfully',
-      data: updateData
+      data: finalUserData
     });
   } catch (error) {
-    console.error('Update profile error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error updating profile'
-    });
+    console.error("Error updating profile: ", error);
+    res.status(500).json({ success: false, message: error.message || "Server error" });
   }
 };
+
+
 
 // Delete user account
 const deleteAccount = async (req, res) => {
