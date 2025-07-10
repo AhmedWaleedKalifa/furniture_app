@@ -4,16 +4,16 @@ import {
   FlatList,
   ActivityIndicator,
   TouchableOpacity,
-  Alert,
 } from "react-native";
 import React, { useEffect } from "react";
 import useFetch from "../../services/useFetch";
 import { getMyOrders } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { useRoleAccess } from "../../lib/useRoleAcess";
+import { Link } from "expo-router";
 
 const OrdersScreen = () => {
-  const { token, user, globalRefreshKey } = useAuth();
+  const { token, globalRefreshKey } = useAuth();
   const { hasAccess } = useRoleAccess(["client"]);
   const {
     data: orders,
@@ -21,13 +21,19 @@ const OrdersScreen = () => {
     error,
     refetch,
   } = useFetch(() => getMyOrders(token!), !!token);
+
   useEffect(() => {
-    if (token) refetch();
-  }, [globalRefreshKey]);
+    if (token) {
+      refetch();
+    }
+  }, [globalRefreshKey, token]);
+
   if (!hasAccess) {
     return (
-      <View className="flex-1 justify-center items-center">
-        <Text className="text-lg text-red-500">Access Denied</Text>
+      <View className="flex-1 justify-center items-center bg-w-200 p-5">
+        <Text className="text-lg text-red-500 text-center">
+          Access Denied. This page is for clients only.
+        </Text>
       </View>
     );
   }
@@ -35,102 +41,75 @@ const OrdersScreen = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "processing":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-500 text-w-100";
       case "shipped":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-500 text-bl";
       case "delivered":
-        return "bg-green-100 text-green-800";
+        return "bg-green-500 text-w-100";
       case "cancelled":
-        return "bg-red-100 text-red-800";
+        return "bg-red-500 text-w-100";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-g-200 text-bl";
     }
   };
 
-  const handleOrderAction = (orderId: string, action: string) => {
-    Alert.alert(
-      `${action} Order`,
-      `Are you sure you want to ${action.toLowerCase()} this order?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: action,
-          onPress: () => {
-            // Implement order action logic
-            Alert.alert(
-              "Success",
-              `Order ${action.toLowerCase()}ed successfully!`
-            );
-            refetch();
-          },
-        },
-      ]
-    );
-  };
- 
-  if (loading) {
-    return (
-      <View className="flex-1 justify-center items-center bg-w-200">
-        <ActivityIndicator size="large" color="#7df9ff" />
-      </View>
-    );
-  }
-  
-  if (!orders || orders.length === 0) return <View className="flex-1 bg-w-200 px-5 pt-8 justify-center items-center"><Text className="text-g-300">No orders found.</Text></View>;
+  const renderOrderItem = ({ item }: { item: any }) => (
+    <Link href={`/order/${item.id}`} asChild>
+      <TouchableOpacity className="bg-w-100 p-4 rounded-lg mb-4 shadow-md border border-g-100">
+        <View className="flex-row justify-between items-center">
+          <Text
+            className="font-bold text-lg text-bl flex-1 pr-2"
+            numberOfLines={1}
+          >
+            Order #{item.id.substring(0, 8)}
+          </Text>
+          <Text
+            className={`font-bold px-3 py-1 rounded-full text-xs capitalize ${getStatusColor(
+              item.orderStatus
+            )}`}
+          >
+            {item.orderStatus}
+          </Text>
+        </View>
+
+        <Text className="text-xl font-bold text-br mt-2">
+          ${item.totalPrice.toFixed(2)}
+        </Text>
+
+        <Text className="text-g-300 mt-2" numberOfLines={2}>
+          Items: {item.items.map((p: any) => `${p.quantity}x ${p.productName}`).join(', ')}
+        </Text>
+
+        <Text className="text-g-200 mt-2 text-xs">
+          Ordered on: {new Date(item.createdAt).toLocaleDateString()}
+        </Text>
+      </TouchableOpacity>
+    </Link>
+  );
 
   return (
-    <View className="flex-1 bg-white px-5 pt-8">
-      <Text className="text-2xl font-bold text-bl mb-6">My Orders</Text>
+    <View className="flex-1 bg-w-200 p-5 pt-16">
+      <Text className="text-2xl font-bold text-bl mb-4">My Orders</Text>
 
-      {error && <Text className="text-red-500">{error.message}</Text>}
+      {loading && <ActivityIndicator size="large" color="#7df9ff" />}
+      {error && (
+        <Text className="text-red-500 text-center py-4">{error.message}</Text>
+      )}
 
       <FlatList
         data={orders}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View className="bg-white rounded-lg shadow-md p-4 mb-4 border border-g-100">
-            <View className="flex-row justify-between items-center mb-3">
-              <Text className="text-lg font-semibold text-bl">
-                Order #{item.id.substring(0, 8)}
-              </Text>
-              <Text
-                className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                  item.orderStatus
-                )}`}
-              >
-                {item.orderStatus}
-              </Text>
-            </View>
-
-            <Text className="text-2xl font-bold text-accent mb-2">
-              ${item.totalPrice.toFixed(2)}
-            </Text>
-
-            <Text className="text-g-200 mb-3">
-              Date: {(() => {
-                  if (!item.createdAt) return 'N/A';
-                  if (typeof item.createdAt === 'object' && '_seconds' in item.createdAt) {
-                    return new Date(item.createdAt._seconds * 1000).toLocaleDateString();
-                  }
-                  return new Date(item.createdAt as string).toLocaleDateString();
-                })()}
-            </Text>
-
-            <View className="mb-3">
-              <Text className="text-bl font-medium mb-2">Items:</Text>
-              {item.items.map((product, index) => (
-                <Text key={index} className="text-g-200 text-sm">
-                  • {product.quantity}x {product.productName}
-                </Text>
-              ))}
-            </View>
-          </View>
-        )}
+        renderItem={renderOrderItem}
         ListEmptyComponent={
-          <Text className="text-center text-g-200 mt-8">
-            You have no orders.
-          </Text>
+          !loading ? (
+            <View className="flex-1 justify-center items-center mt-20">
+              <Text className="text-center text-g-300 text-base">
+                You have no orders yet.
+              </Text>
+            </View>
+          ) : null
         }
+        contentContainerStyle={{ flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
       />
     </View>

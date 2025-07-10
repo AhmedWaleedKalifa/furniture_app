@@ -212,27 +212,9 @@ export const removeFromWishlist = async (token: string, productId: string): Prom
 };
 
 // --- Order Functions ---
-export const getMyOrders = async (token: string): Promise<Order[]> => {
-    const response = await fetch(`${BASE_URL}/api/orders/my-orders`, {
-        headers: getAuthHeaders(token)
-    });
-    const data = await response.json();
-    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch orders');
-    return data.data;
-}
 
-export const createOrder = async (token: string, orderData: any): Promise<Order> => {
-  const response = await fetch(`${BASE_URL}/api/orders`, {
-      method: 'POST',
-      headers: getAuthHeaders(token),
-      body: JSON.stringify(orderData),
-  });
-  const data: ApiResponse<Order> = await response.json();
-  if (!response.ok || !data.success) {
-      throw new Error(data.message || 'Failed to create order');
-  }
-  return data.data;
-};
+
+
 
 // --- Admin Functions ---
 export const getAllUsers = async (token: string): Promise<User[]> => {
@@ -286,17 +268,7 @@ export const approveProduct = async (token: string, productId: string): Promise<
     if (!response.ok || !data.success) throw new Error(data.message || 'Failed to approve product');
 }
 
-export const rejectProduct = async (token: string, productId: string, reason: string): Promise<void> => {
-    const response = await fetch(`${BASE_URL}/api/admin/products/${productId}/approve`, {
-      method: 'PUT',
-      headers: getAuthHeaders(token),
-      body: JSON.stringify({ action: 'reject', reason })
-    });
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(data.message || 'Failed to reject product');
-    }
-};
+
 
 export const deleteProduct = async (token: string, productId: string) => {
     const response = await fetch(`${BASE_URL}/api/admin/products/${productId}`, {
@@ -310,33 +282,9 @@ export const deleteProduct = async (token: string, productId: string) => {
     return data;
 };
 
-export const getAllOrders = async (token: string): Promise<Order[]> => {
-    const response = await fetch(`${BASE_URL}/api/orders`, {
-      headers: getAuthHeaders(token)
-    });
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(data.message || 'Failed to fetch orders');
-    }
-    return data.data;
-};
 
-export const updateOrderStatus = async (
-    token: string, 
-    orderId: string, 
-    orderStatus: string, 
-    paymentStatus?: string
-): Promise<void> => {
-    const response = await fetch(`${BASE_URL}/api/orders/${orderId}/status`, {
-      method: 'PUT',
-      headers: getAuthHeaders(token),
-      body: JSON.stringify({ orderStatus, paymentStatus })
-    });
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(data.message || 'Failed to update order status');
-    }
-};
+
+
 
 export const getProductAnalytics = async (token: string) => {
     const response = await fetch(`${BASE_URL}/api/admin/analytics`, {
@@ -409,62 +357,9 @@ export const updateProduct = async (token: string, productId: string, data: any)
 };
 
 // --- Support Ticket Functions ---
-export const createTicket = async (token: string, ticketData: { subject: string, message: string, priority: string, category: string }): Promise<void> => {
-  const response = await fetch(`${BASE_URL}/api/support/tickets`, {
-      method: 'POST',
-      headers: getAuthHeaders(token),
-      body: JSON.stringify(ticketData)
-  });
-  const data = await response.json();
-  if (!response.ok || !data.success) throw new Error(data.message || 'Failed to create ticket');
-}
 
-export const getMyTickets = async (token: string): Promise<SupportTicket[]> => {
-  const response = await fetch(`${BASE_URL}/api/support/tickets`, {
-      headers: getAuthHeaders(token)
-  });
-  const data = await response.json();
-  if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch tickets');
-  return data.data;
-}
-    
-export const getAdminTickets = async (token: string): Promise<SupportTicket[]> => {
-  const response = await fetch(`${BASE_URL}/api/admin/tickets`, {
-      headers: getAuthHeaders(token)
-  });
-  const data = await response.json();
-  if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch tickets');
-  return data.data;
-}
 
-export const getTicketDetails = async (token: string, ticketId: string): Promise<SupportTicket> => {
-    const response = await fetch(`${BASE_URL}/api/support/tickets/${ticketId}`, {
-        headers: getAuthHeaders(token),
-    });
-    const data: ApiResponse<SupportTicket> = await response.json();
-    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch ticket details');
-    return data.data;
-};
-    
-export const addTicketReply = async (token: string, ticketId: string, message: string): Promise<void> => {
-    const response = await fetch(`${BASE_URL}/api/support/tickets/${ticketId}/reply`, {
-        method: 'POST',
-        headers: getAuthHeaders(token),
-        body: JSON.stringify({ message }),
-    });
-    const data = await response.json();
-    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to send reply');
-};
 
-export const updateTicketStatus = async (token: string, ticketId: string, status: string): Promise<void> => {
-  const response = await fetch(`${BASE_URL}/api/admin/tickets/${ticketId}/status`, {
-      method: 'PUT',
-      headers: getAuthHeaders(token),
-      body: JSON.stringify({ status }),
-  });
-  const data = await response.json();
-  if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update status');
-};
 
 export const updateUserProfile = async (token: string, formData: FormData): Promise<User> => {
   const response = await fetch(`${BASE_URL}/api/auth/profile`, {
@@ -507,3 +402,154 @@ export const getCompanyAnalytics = async (token: string) => {
         console.warn('Failed to track AR placement:', data.message);
       }
     };
+
+
+    export const getAllTickets = async (token: string) => {
+      const response = await fetch(`${BASE_URL}/api/support/admin/tickets`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to fetch tickets');
+      return data.data;
+    };
+    
+
+    export const deleteTicket = async (token: string, ticketId: string) => {
+      const response = await fetch(`${BASE_URL}/api/support/admin/tickets/${ticketId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to delete ticket');
+      return data.data;
+    };
+    
+    // FAQs
+    export const getFAQs = async () => {
+      const response = await fetch(`${BASE_URL}/api/support/faqs`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to fetch FAQs');
+      return data.data;
+    };
+
+    export const createTicket = async (token: string, ticketData: { subject: string, message: string, priority: string, category: string }): Promise<void> => {
+      const response = await fetch(`${BASE_URL}/api/support/tickets`, {
+          method: 'POST',
+          headers: getAuthHeaders(token),
+          body: JSON.stringify(ticketData)
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to create ticket');
+    }
+    
+    export const getMyTickets = async (token: string): Promise<SupportTicket[]> => {
+      const response = await fetch(`${BASE_URL}/api/support/tickets`, {
+          headers: getAuthHeaders(token)
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch tickets');
+      return data.data;
+    }
+        
+    export const getAdminTickets = async (token: string): Promise<SupportTicket[]> => {
+      const response = await fetch(`${BASE_URL}/api/admin/tickets`, {
+          headers: getAuthHeaders(token)
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch tickets');
+      return data.data;
+    }
+    
+    export const getTicketDetails = async (token: string, ticketId: string): Promise<SupportTicket> => {
+        const response = await fetch(`${BASE_URL}/api/support/tickets/${ticketId}`, {
+            headers: getAuthHeaders(token),
+        });
+        const data: ApiResponse<SupportTicket> = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch ticket details');
+        return data.data;
+    };
+        
+    export const addTicketReply = async (token: string, ticketId: string, message: string): Promise<void> => {
+        const response = await fetch(`${BASE_URL}/api/support/tickets/${ticketId}/reply`, {
+            method: 'POST',
+            headers: getAuthHeaders(token),
+            body: JSON.stringify({ message }),
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.message || 'Failed to send reply');
+    };
+    
+    export const updateTicketStatus = async (token: string, ticketId: string, status: string): Promise<void> => {
+      const response = await fetch(`${BASE_URL}/api/admin/tickets/${ticketId}/status`, {
+          method: 'PUT',
+          headers: getAuthHeaders(token),
+          body: JSON.stringify({ status }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update status');
+    };
+
+    export const getMyOrders = async (token: string): Promise<Order[]> => {
+      const response = await fetch(`${BASE_URL}/api/orders/my-orders`, {
+          headers: getAuthHeaders(token)
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch orders');
+      return data.data;
+  }
+  
+  export const createOrder = async (token: string, orderData: CreateOrderData): Promise<Order> => {
+    const response = await fetch(`${BASE_URL}/api/orders`, {
+        method: 'POST',
+        headers: getAuthHeaders(token),
+        body: JSON.stringify(orderData),
+    });
+    const data: ApiResponse<Order> = await response.json();
+    if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Failed to create order');
+    }
+    return data.data;
+  };
+  
+  export const updateOrderStatus = async (
+    token: string, 
+    orderId: string, 
+    orderStatus: string, 
+    paymentStatus?: string
+  ): Promise<void> => {
+    const response = await fetch(`${BASE_URL}/api/orders/${orderId}/status`, {
+      method: 'PUT',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ orderStatus, paymentStatus })
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'Failed to update order status');
+    }
+  };
+  
+  // Reject Product
+  export const rejectProduct = async (token: string, productId: string, reason: string): Promise<void> => {
+    const response = await fetch(`${BASE_URL}/api/admin/products/${productId}/approve`, {
+      method: 'PUT',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ action: 'reject', reason })
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'Failed to reject product');
+    }
+  };
+  
+  // Get All Orders (Admin)
+  export const getAllOrders = async (token: string): Promise<Order[]> => {
+    const response = await fetch(`${BASE_URL}/api/orders`, {
+      headers: getAuthHeaders(token)
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'Failed to fetch orders');
+    }
+    return data.data;
+  };
+  

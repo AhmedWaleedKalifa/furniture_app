@@ -313,4 +313,3 @@ module.exports = {
   cancelOrder,
   getCompanyOrders
 }; 
-
